@@ -1,5 +1,7 @@
 # Link-Inked
 
+![App screenshot](screenshot.jpg)
+
 ## Description
 Link-Inked is a web application built using Streamlit and Selenium, designed to automate the process of fetching and displaying news headlines from specified URLs. The application allows users to select the most interesting headlines, fetch the content of the articles, and generate insightful comments suitable for professional networks like LinkedIn.
 
@@ -32,7 +34,7 @@ pip install streamlit selenium ollama
 ## Usage
 
 1. Start the application:
-streamlit run app.py
+streamlit run Link-Inked.py
 
 
 2. The application will launch in your default web browser. You can interact with it by entering URLs and selecting options through the Streamlit interface.
