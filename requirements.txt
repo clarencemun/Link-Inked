@@ -1,0 +1,4 @@
+streamlit==1.15.0
+selenium==4.3.0
+chromedriver-autoinstaller==0.3.1
+ollama==0.1.2
