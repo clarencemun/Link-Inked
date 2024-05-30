@@ -1,81 +1,40 @@
+import urllib.parse
 import streamlit as st
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+import feedparser
 import ollama
-import random
+from PIL import Image
+import os
 
-# Setup ChromeDriver
-def setup_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')  # for running headlessly
-    driver = webdriver.Chrome(options=options)
-    return driver
+# Set base directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def fetch_headlines(urls):
-    driver = setup_driver()
-    valid_headlines = []
-    try:
-        for url in urls:
-            driver.get(url)
-            wait = WebDriverWait(driver, 10)
-            articles_attempt = 0
-            max_attempts = 3  # Maximum attempts to fetch articles if they become stale
+# Load the banner image using a relative path
+image_path = os.path.join(BASE_DIR, "banner.png")
+image = Image.open(image_path)
 
-            while articles_attempt < max_attempts:
-                try:
-                    wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article.IFHyqb.DeXSAc")))
-                    articles = driver.find_elements(By.CSS_SELECTOR, "article.IFHyqb.DeXSAc")
-                    
-                    for article in articles[:15]:
-                        try:
-                            headline_tag = article.find_element(By.CSS_SELECTOR, "a.JtKRv")
-                            link_tag = article.find_element(By.CSS_SELECTOR, "a.WwrzSb")
-                            source_tag = article.find_element(By.CSS_SELECTOR, "div.vr1PYe")
+# Display the banner image
+st.image(image, width=200)
 
-                            headline = headline_tag.text.strip()
-                            link = link_tag.get_attribute("href")
-                            source = source_tag.text.strip()
-
-                            if source:
-                                valid_headlines.append((headline, link))
-                        except StaleElementReferenceException:
-                            print("Stale element within article loop, retrying...")
-                            break  # Break the inner loop to retry the whole article fetch
-                    else:
-                        # If the inner loop did not break (no stale elements), exit while loop
-                        break
-                except StaleElementReferenceException:
-                    print("Stale element encountered, retrying fetch...")
-                    articles_attempt += 1
-
-                if articles_attempt >= max_attempts:
-                    raise Exception("Failed to fetch articles after multiple attempts due to stale elements.")
-
-    finally:
-        driver.quit()
-
-    return valid_headlines
-
-
-def pick_top_headlines(headlines, n=15):
-    numbered_headlines = [f"{i + 1}. {headline}" for i, (headline, link) in enumerate(headlines)]
+# Function to use Ollama to pick the top headlines
+def pick_top_headlines(headlines, n=3):
+    numbered_headlines = [f"{i + 1}. {title}" for i, (title, _) in enumerate(headlines)]
     input_text = " and ".join(numbered_headlines)
     input_text = f"Pick the top {n} most interesting headlines from the following, and provide the serial number along with the headline: {input_text}"
 
+    # Define the conversation history format
     conversation_history = [
         {'role': 'system', 'content': 'You are a business analyst who is equally learned about AI and Data Science.'},
         {'role': 'user', 'content': input_text}
     ]
 
+    # Use Ollama LLM to analyze the headlines and pick the top ones
     stream = ollama.chat(
         model='llama3:8b',
         messages=conversation_history,
         stream=True
     )
 
+    # Collect response and parse the selected headlines
     response = ""
     for chunk in stream:
         if 'message' in chunk and 'content' in chunk['message']:
@@ -91,78 +50,84 @@ def pick_top_headlines(headlines, n=15):
             except ValueError:
                 pass
 
+    # Return only the selected headlines based on their numbers
     selected_indices = [number - 1 for number, headline in selected_headlines_with_numbers]
-    return [headlines[index] for index in selected_indices]
-
-def fetch_article_content(url):
-    driver = setup_driver()
-    try:
-        driver.get(url)
-        wait = WebDriverWait(driver, 10)
-        paragraphs = []
-        attempt = 0
-        max_attempts = 3  # Set a maximum number of attempts to avoid infinite loops
-        
-        while attempt < max_attempts and not paragraphs:
-            try:
-                wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "p")))
-                paragraph_elements = driver.find_elements(By.CSS_SELECTOR, "p")
-                paragraphs = [p.text for p in paragraph_elements if p.text]
-            except StaleElementReferenceException:
-                print("Encountered a stale element, retrying...")
-                attempt += 1
-                if attempt >= max_attempts:
-                    raise Exception("Failed to fetch content after multiple attempts due to stale elements.")
-            except TimeoutException:
-                print("Timeout waiting for article content to load.")
-                break
-        
-        return "\n".join(paragraphs)
-    finally:
-        driver.quit()
+    return [headlines[index] for index in selected_indices if index < len(headlines)]
 
 
-def generate_comment(headline, article_content):
+# Function to generate comments for LinkedIn
+def generate_comment(headline):
+    # This prompt setup should match the expected input structure for Ollama
     conversation_history = [
         {'role': 'system', 'content': 'You are a business analyst who is equally learned about AI and Data Science.'},
-        {'role': 'user', 'content': f"Generate a reserved, professional, and insightful comment from a third-person perspective, avoiding the use of exclamation marks and of not more than 100 words for LinkedIn for the article titled '{headline}'. The content is: {article_content}"}
+        {'role': 'user', 'content': f"Generate a reserved, professional, and insightful comment structured in this format: third person, first person, third person, avoiding the use of exclamation marks and not more than 150 words for LinkedIn for the article titled '{headline}'."}
     ]
 
-    stream = ollama.chat(
+    # Assuming 'ollama.chat()' expects 'messages' and not 'prompt'
+    response = ollama.chat(
         model='llama3:8b',
         messages=conversation_history,
-        stream=True
+        stream=True  # Adjust this according to the actual function definition if 'stream' is not needed
     )
 
-    response = ""
-    for chunk in stream:
+    # Collect response from the stream
+    comment = ""
+    for chunk in response:
         if 'message' in chunk and 'content' in chunk['message']:
-            response += chunk['message']['content']
-    return response
+            comment += chunk['message']['content']
 
-# Default URLs to fetch news articles
-default_urls = [
-    "https://news.google.com/topics/CAAqKAgKIiJDQkFTRXdvS0wyMHZNR3AwTTE5eE14SUZaVzR0UjBJb0FBUAE?hl=en-SG&gl=SG&ceid=SG%3Aen",
-    "https://news.google.com/topics/CAAqJAgKIh5DQkFTRUFvSEwyMHZNRzFyZWhJRlpXNHRSMElvQUFQAQ?hl=en-SG&gl=SG&ceid=SG%3Aen",
-    "https://news.google.com/topics/CAAqKAgKIiJDQkFTRXdvS0wyMHZNREp4TTJNMU5oSUZaVzR0UjBJb0FBUAE?hl=en-SG&gl=SG&ceid=SG%3Aen",
-    "https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSkwyMHZNR00yZW10MEVnVmxiaTFIUWlnQVAB?hl=en-SG&gl=SG&ceid=SG%3Aen",
-    "https://news.google.com/topics/CAAqKQgKIiNDQkFTRkFvTEwyY3ZNVEl4YW01eE1XMFNCV1Z1TFVkQ0tBQVAB?hl=en-SG&gl=SG&ceid=SG%3Aen",
-    "https://news.google.com/topics/CAAqJQgKIh9DQkFTRVFvSUwyMHZNRFZtYkdZU0JXVnVMVWRDS0FBUAE?hl=en-SG&gl=SG&ceid=SG%3Aen"
-]
+    return comment.strip()
 
-# Streamlit app setup
-st.title("Link-Inked")
 
-urls_input = st.text_area("Enter URLs (one per line):", "\n".join(default_urls))
-urls = [url.strip() for url in urls_input.splitlines() if url.strip()]
+def fetch_news_from_rss(url):
+    feed = feedparser.parse(url)
+    return [(entry.title, entry.link) for entry in feed.entries]
 
-if st.button("Generate Post"):
-    st.subheader("Generating post...")
-    valid_headlines = fetch_headlines(urls)
-    top_headlines = pick_top_headlines(valid_headlines, 15)
-    for index, (headline, url) in enumerate(top_headlines):
-        article_content = fetch_article_content(url)
-        comment = generate_comment(headline, article_content)
-        comment += f"\n\nRead more here: {url}"
-        st.write(f"**{headline}**")
-        st.write(comment)
+def generate_rss_url(feed_type, search_terms='', topic='', location='', time_frame='1d', language='en-SG', country='SG'):
+    base_url = "https://news.google.com/rss"
+    if feed_type == 'Top Headlines':
+        return f"{base_url}?hl={language}&gl={country}&ceid={country}:{language}"
+    elif feed_type == 'By Topic':
+        return f"{base_url}/headlines/section/topic/{urllib.parse.quote_plus(topic.upper())}?hl={language}&gl={country}&ceid={country}:{language}"
+    elif feed_type == 'By Country':
+        return f"{base_url}/headlines/section/geo/{urllib.parse.quote_plus(location)}?hl={language}&gl={country}&ceid={country}:{language}"
+    elif feed_type == 'By Search Terms':
+        # Join the search terms with 'OR' and encode them
+        formatted_query = "%20OR%20".join([urllib.parse.quote_plus(term.strip()) for term in search_terms if term])
+        return f"{base_url}/search?q={formatted_query}+when:{time_frame}&hl={language}&gl={country}&ceid={country}:{language}"
+    return base_url  # default to top headlines if no type matches
+
+# Streamlit UI setup
+feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms'], index=0)
+
+# Conditional input fields based on feed type
+search_terms = []
+default_terms = ['Artificial Intelligence', 'Data Science', 'Business', 'Data Analytics', '']  # Default search terms
+if feed_type == 'By Search Terms':
+    st.write("Enter up to five search terms:")
+    for i in range(5):
+        term = st.text_input(f'Search Term {i+1}', value=default_terms[i])
+        search_terms.append(term)
+
+
+topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0) if feed_type == 'By Topic' else ''
+location = st.text_input('Enter Location', '') if feed_type == 'By Country' else ''
+time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d') if feed_type == 'By Search Terms' else ''
+language = "en-SG"
+country = "SG"
+
+
+# Generate RSS URL and fetch news
+if st.button('Generate'):
+    rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
+    headlines = fetch_news_from_rss(rss_url)
+    if headlines:
+        top_headlines = pick_top_headlines(headlines, 3)
+        for title, link in top_headlines:
+            comment = generate_comment(title)
+            st.subheader(title)
+            st.write(comment)
+            st.markdown(f"Read more here: {link}")
+            st.write('---')
+    else:
+        st.write("No news items found.")

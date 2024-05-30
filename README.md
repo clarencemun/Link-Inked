@@ -1,47 +1,49 @@
+```markdown
 # Link-Inked
 
-![App screenshot](screenshot.jpg)
-
-## Description
-Link-Inked is a web application built using Streamlit and Selenium, designed to automate the process of fetching and displaying news headlines from specified URLs. The application allows users to select the most interesting headlines, fetch the content of the articles, and generate insightful comments suitable for professional networks like LinkedIn.
+Link-Inked is a Streamlit-based application that leverages Google News RSS feeds to display relevant news articles. Users can specify search criteria based on topics, locations, and custom search queries. The application also integrates with the Ollama LLM to identify the most compelling headlines and generate professional, LinkedIn-style comments for each selected headline.
 
 ## Features
-- Fetch news headlines from user-defined URLs.
-- Interactive selection of top headlines.
-- Fetch full articles and generate professional comments for LinkedIn posts.
+
+- **Dynamic RSS Feed URL Generation**: Users can dynamically generate URLs to fetch news based on various criteria such as top headlines, specific topics, or custom search parameters.
+- **LLM Integration for Headline Selection**: Utilizes the Ollama LLM to identify and highlight the top headlines that are most likely to engage readers.
+- **Automated Comment Generation**: Generates insightful comments suitable for professional social media platforms like LinkedIn, enhancing user engagement and discussion.
+- **Responsive User Interface**: Built with Streamlit, the UI is intuitive and responsive, making it accessible across different devices and screen sizes.
 
 ## Installation
 
-### Requirements
-- Python 3.6 or newer
-- Streamlit
-- Selenium
-- ChromeDriver (compatible with your Chrome version)
+To set up and run Link-Inked locally, you will need Python and pip installed on your machine.
+
+### Prerequisites
+
+- Python 3.8+
+- pip
 
 ### Setup
+
 1. Clone the repository:
-git clone <repository-url>
-cd <repository-directory>
+   ```bash
+   git clone https://github.com/clarencemun/Link-Inked.git
+   cd Link-Inked
+   ```
 
-
-2. Install the required Python libraries:
-pip install streamlit selenium ollama
-
-
-3. Ensure ChromeDriver is installed and in your PATH. You can download it from:
-[ChromeDriver - WebDriver for Chrome](https://sites.google.com/a/chromium.org/chromedriver/).
+2. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ## Usage
 
-1. Start the application:
+Launch the application by running the following command in your terminal:
+
+```bash
 streamlit run Link-Inked.py
+```
 
-
-2. The application will launch in your default web browser. You can interact with it by entering URLs and selecting options through the Streamlit interface.
-
-3. Enter the URLs from which you want to fetch news headlines in the text area provided.
-
-4. Click on 'Generate Post' to fetch headlines, select top headlines, fetch the full article, and generate a comment.
+Access the application in your web browser at `http://localhost:8501`.
 
 ## Contributing
-Contributions to Link-Inked are welcome! Please feel free to fork the repository, make changes, and submit pull requests.
+
+Contributions to Link-Inked are welcome! For major changes, please open an issue first to discuss what you would like to change. Ensure any pull requests are made against predetermined branch policies.
+
+```
