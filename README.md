@@ -1,5 +1,6 @@
-```markdown
 # Link-Inked
+
+![App screenshot](screenshot.jpg)
 
 Link-Inked is a Streamlit-based application that leverages Google News RSS feeds to display relevant news articles. Users can specify search criteria based on topics, locations, and custom search queries. The application also integrates with the Ollama LLM to identify the most compelling headlines and generate professional, LinkedIn-style comments for each selected headline.
 
@@ -45,5 +46,3 @@ Access the application in your web browser at `http://localhost:8501`.
 ## Contributing
 
 Contributions to Link-Inked are welcome! For major changes, please open an issue first to discuss what you would like to change. Ensure any pull requests are made against predetermined branch policies.
-
-```
