@@ -14,6 +14,7 @@ Link-Inked is a Streamlit-based application that leverages Google News RSS feeds
 ## Installation
 
 To set up and run Link-Inked locally, you will need Python and pip installed on your machine.
+You will also need Ollama with Llama3:8b running in the background for this project.
 
 ### Prerequisites
 
