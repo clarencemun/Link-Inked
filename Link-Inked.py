@@ -15,6 +15,42 @@ image = Image.open(image_path)
 # Display the banner image
 st.image(image, width=200)
 
+costar_prompt = """
+# CONTEXT #
+A business analyst with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
+
+#########
+
+# OBJECTIVE #
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. The comment should be no more than 150 words and include a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+
+#########
+
+# STYLE #
+The comment should be succinct, professional, and insightful.
+
+#########
+
+# TONE #
+The tone should be reserved and professional.
+
+#########
+
+# AUDIENCE #
+The intended audience is the LinkedIn network of the business analyst, including peers, potential employers, and industry professionals.
+
+#########
+
+# RESPONSE #
+Print only the LinkedIn comment in text format.
+
+#############
+
+# START ANALYSIS #
+
+[ARTICLE]
+"""
+
 # Function to use Ollama to pick the top headlines
 def pick_top_headlines(headlines, n=3):
     numbered_headlines = [f"{i + 1}. {title}" for i, (title, _) in enumerate(headlines)]
@@ -60,7 +96,7 @@ def generate_comment(headline):
     # This prompt setup should match the expected input structure for Ollama
     conversation_history = [
         {'role': 'system', 'content': 'You are a business analyst who is equally learned about AI and Data Science.'},
-        {'role': 'user', 'content': f"Generate a reserved, professional, and insightful comment structured in this format: third person, first person, third person, avoiding the use of exclamation marks and not more than 150 words for LinkedIn for the article titled '{headline}'."}
+        {'role': 'user', 'content': f"'{costar_prompt}' '{headline}'."}
     ]
 
     # Assuming 'ollama.chat()' expects 'messages' and not 'prompt'
