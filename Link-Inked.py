@@ -19,7 +19,7 @@ st.image(image, width=200)
 
 costar_prompt = """
 # CONTEXT #
-A business analyst with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
+A business analyst with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn post.
 
 #########
 
@@ -44,7 +44,7 @@ The intended audience is the LinkedIn network of the business analyst, including
 #########
 
 # RESPONSE #
-Print only the LinkedIn comment in text format.
+Print only the LinkedIn comment and nothing but the LinkedIn comment in text format.
 
 #############
 
@@ -57,11 +57,10 @@ Print only the LinkedIn comment in text format.
 def pick_top_headlines(headlines, n=3):
     numbered_headlines = [f"{i + 1}. {title}" for i, (title, _) in enumerate(headlines)]
     input_text = " and ".join(numbered_headlines)
-    input_text = f"Pick the top {n} most interesting headlines from the following, and provide the serial number along with the headline: {input_text}"
+    input_text = f"As a business analyst with a strong interest and knowledge in data science and AI, pick the top {n} most interesting headlines from the following, and provide the serial number along with the headline: {input_text}"
 
     # Define the conversation history format
     conversation_history = [
-        {'role': 'system', 'content': 'You are a business analyst who is equally learned about AI and Data Science.'},
         {'role': 'user', 'content': input_text}
     ]
 
@@ -97,7 +96,6 @@ def pick_top_headlines(headlines, n=3):
 def generate_comment(headline):
     # This prompt setup should match the expected input structure for Ollama
     conversation_history = [
-        {'role': 'system', 'content': 'You are a business analyst who is equally learned about AI and Data Science.'},
         {'role': 'user', 'content': f"'{costar_prompt}' '{headline}'."}
     ]
 
@@ -144,14 +142,8 @@ def copy_button(comment, unique_id):
         <script>
         function copyToClipboard(unique_id) {{
             const copyText = document.getElementById('textarea-' + unique_id);
-            copyText.select();
-            navigator.clipboard.writeText(copyText.value)
-            .then(() => {{
-                alert('Copied to clipboard!');
-            }})
-            .catch(err => {{
-                alert('Failed to copy: ' + err);
-            }});
+            const textToCopy = copyText.value.trim();  // Use trim() to remove any leading or trailing whitespace
+    navigator.clipboard.writeText(textToCopy)
         }}
         </script>
     """
@@ -196,10 +188,3 @@ if st.button('Generate'):
             st.write('---')
     else:
         st.write("No news items found.")
-
-
-
-
-
-
-
