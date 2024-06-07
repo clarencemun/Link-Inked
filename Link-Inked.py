@@ -4,6 +4,8 @@ import feedparser
 import ollama
 from PIL import Image
 import os
+import uuid  # Import uuid for generating unique identifiers
+import streamlit.components.v1 as components
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -133,6 +135,29 @@ def generate_rss_url(feed_type, search_terms='', topic='', location='', time_fra
         return f"{base_url}/search?q={formatted_query}+when:{time_frame}&hl={language}&gl={country}&ceid={country}:{language}"
     return base_url  # default to top headlines if no type matches
 
+def copy_button(comment, unique_id):
+    html_content = f"""
+        <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
+            {comment}
+        </textarea>
+        <button onclick="copyToClipboard('{unique_id}')">Copy</button>
+        <script>
+        function copyToClipboard(unique_id) {{
+            const copyText = document.getElementById('textarea-' + unique_id);
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value)
+            .then(() => {{
+                alert('Copied to clipboard!');
+            }})
+            .catch(err => {{
+                alert('Failed to copy: ' + err);
+            }});
+        }}
+        </script>
+    """
+    components.html(html_content, height=30)  # Adjust height as necessary
+
+
 # Streamlit UI setup
 feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms'], index=0)
 
@@ -155,15 +180,26 @@ country = "SG"
 
 # Generate RSS URL and fetch news
 if st.button('Generate'):
+    # Assuming `generate_rss_url` needs parameters like feed_type, search_terms, topic, location, time_frame, language, and country
     rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
     headlines = fetch_news_from_rss(rss_url)
     if headlines:
         top_headlines = pick_top_headlines(headlines, 3)
         for title, link in top_headlines:
             comment = generate_comment(title)
+            # Append the URL to the comment
+            full_comment = f"{comment}\n\nRead more here: {link}"
+            unique_id = str(uuid.uuid4())
             st.subheader(title)
-            st.write(comment)
-            st.markdown(f"Read more here: {link}")
+            st.write(full_comment)
+            copy_button(full_comment, unique_id)
             st.write('---')
     else:
         st.write("No news items found.")
+
+
+
+
+
+
+
