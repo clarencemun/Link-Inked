@@ -24,7 +24,7 @@ A business analyst with a strong interest and knowledge in data science and AI n
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. The comment should be no more than 150 words and include a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. The comment should be no more than 200 words, quotes one key point from the article, contextualises that quote, as well as include a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
