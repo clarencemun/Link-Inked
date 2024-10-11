@@ -2,11 +2,13 @@ import urllib.parse
 import streamlit as st
 import feedparser
 import openai
-from openai import AzureOpenAI
 from PIL import Image
 import os
 import uuid  # Import uuid for generating unique identifiers
 import streamlit.components.v1 as components
+
+# Ensure the OpenAI library is installed
+# You can install it via pip: pip install openai
 
 # Set up Azure OpenAI API key and endpoint
 os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
@@ -79,7 +81,7 @@ def pick_top_headlines(headlines, n=5):
 
     # Use Azure OpenAI to analyze the headlines and pick the top ones
     response = openai.ChatCompletion.create(
-        model=azure_model,
+        engine=azure_model,
         messages=conversation_history,
         temperature=0.7
     )
@@ -110,7 +112,7 @@ def generate_comment(headline):
     ]
 
     response = openai.ChatCompletion.create(
-        model=azure_model,
+        engine=azure_model,
         messages=conversation_history,
         temperature=0.7
     )
