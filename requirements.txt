@@ -1,3 +1,5 @@
 streamlit
 openai
+gTTS
 Pillow
+requests
