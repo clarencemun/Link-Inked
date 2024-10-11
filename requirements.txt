@@ -1,5 +1,3 @@
 streamlit
 openai
 Pillow
-os
-uuid
