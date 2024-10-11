@@ -1,4 +1,5 @@
 streamlit
-feedparser
 openai
 Pillow
+os
+uuid
