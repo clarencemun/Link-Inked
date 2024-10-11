@@ -94,9 +94,9 @@ def copy_button(comment, unique_id):
 # Streamlit UI setup
 st.header('Generate LinkedIn Comment')
 
-# Input fields for article content and URL
-article_content = st.text_area("Paste the article content here:")
+# Input fields for article URL and content
 article_url = st.text_input("Paste the article URL here:")
+article_content = st.text_area("Paste the article content here:")
 
 if st.button('Generate Comment'):
     if article_content.strip():
