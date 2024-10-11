@@ -102,7 +102,7 @@ if st.button('Generate Comment'):
     if article_content.strip():
         comment = generate_comment(article_content)
         if article_url.strip():
-            comment += f"\n\nRead the article here:\n
+            comment += f"\n\nRead the article here:
  {article_url}"
         unique_id = str(uuid.uuid4())
         st.subheader("Generated Comment:")
