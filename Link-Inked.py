@@ -81,12 +81,12 @@ def pick_top_headlines(headlines, n=5):
 
     # Use Azure OpenAI to analyze the headlines and pick the top ones
     response = openai.ChatCompletion.create(
-        engine=azure_model,
+        model=azure_model,
         messages=conversation_history,
         temperature=0.7
     )
 
-    response_text = response.choices[0].message['content']
+    response_text = response['choices'][0]['message']['content']
 
     # Collect response and parse the selected headlines
     selected_headlines_with_numbers = []
@@ -112,12 +112,12 @@ def generate_comment(headline):
     ]
 
     response = openai.ChatCompletion.create(
-        engine=azure_model,
+        model=azure_model,
         messages=conversation_history,
         temperature=0.7
     )
 
-    response_text = response.choices[0].message['content']
+    response_text = response['choices'][0]['message']['content']
     return response_text.strip()
 
 
