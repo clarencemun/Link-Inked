@@ -1,6 +1,7 @@
 import urllib.parse
 import streamlit as st
 import feedparser
+import openai
 from openai import AzureOpenAI
 from PIL import Image
 import os
@@ -10,12 +11,11 @@ import streamlit.components.v1 as components
 # Set up Azure OpenAI API key and endpoint
 os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
 
-# Initialise Azure OpenAI client
-client = AzureOpenAI(
-    azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
-    api_version=st.secrets["AZURE_API_VERSION"]
-)
+# Set up Azure OpenAI credentials
+openai.api_type = "azure"
+openai.api_base = st.secrets["AZURE_ENDPOINT"]
+openai.api_version = st.secrets["AZURE_API_VERSION"]
+openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
 
 # Select your Azure OpenAI model
 azure_model = 'gpt-4-0125-preview'
@@ -78,13 +78,13 @@ def pick_top_headlines(headlines, n=5):
     ]
 
     # Use Azure OpenAI to analyze the headlines and pick the top ones
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model=azure_model,
         messages=conversation_history,
         temperature=0.7
     )
 
-    response_text = response.choices[0].message.content
+    response_text = response.choices[0].message['content']
 
     # Collect response and parse the selected headlines
     selected_headlines_with_numbers = []
@@ -109,13 +109,13 @@ def generate_comment(headline):
         {'role': 'user', 'content': f"'{costar_prompt}' '{headline}'."}
     ]
 
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model=azure_model,
         messages=conversation_history,
         temperature=0.7
     )
 
-    response_text = response.choices[0].message.content
+    response_text = response.choices[0].message['content']
     return response_text.strip()
 
 
