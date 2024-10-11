@@ -1,24 +1,12 @@
 import streamlit as st
-import openai
-from PIL import Image
 import os
+from openai import AzureOpenAI
 import uuid  # Import uuid for generating unique identifiers
 import streamlit.components.v1 as components
-
-# Ensure the OpenAI library is installed
-# You can install it via pip: pip install openai
+from PIL import Image
 
 # Set up Azure OpenAI API key and endpoint
 os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
-
-# Set up Azure OpenAI credentials
-openai.api_type = "azure"
-openai.api_base = st.secrets["AZURE_ENDPOINT"]
-openai.api_version = st.secrets["AZURE_API_VERSION"]
-openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-
-# Select your Azure OpenAI model
-azure_model = 'gpt-4-0125-preview'
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,6 +17,13 @@ image = Image.open(image_path)
 
 # Display the banner image
 st.image(image, width=200)
+
+# Initialise Azure OpenAI client
+client = AzureOpenAI(
+    azure_endpoint=st.secrets["AZURE_ENDPOINT"],
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
+    api_version=st.secrets["AZURE_API_VERSION"]
+)
 
 costar_prompt = """
 # CONTEXT #
@@ -68,18 +63,16 @@ Print only the LinkedIn comment and nothing but the LinkedIn comment in text for
 
 # Function to generate comments for LinkedIn
 def generate_comment(article_content):
-    # This prompt setup should match the expected input structure for Azure OpenAI
-    conversation_history = [
-        {'role': 'user', 'content': f"{costar_prompt} {article_content}"}
-    ]
+    prompt = f"{costar_prompt} {article_content}"
 
-    response = openai.ChatCompletion.create(
-        model=azure_model,
-        messages=conversation_history,
+    # Call the GPT model using the client object and handle response correctly
+    response = client.chat.completions.create(
+        model="gpt-4-0125-preview",
+        messages=[{'role': 'user', 'content': prompt}],
         temperature=0.7
     )
 
-    response_text = response['choices'][0]['message']['content']
+    response_text = response.choices[0].message.content
     return response_text.strip()
 
 def copy_button(comment, unique_id):
