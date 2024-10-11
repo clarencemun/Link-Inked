@@ -1,11 +1,24 @@
 import urllib.parse
 import streamlit as st
 import feedparser
-import ollama
+from openai import AzureOpenAI
 from PIL import Image
 import os
 import uuid  # Import uuid for generating unique identifiers
 import streamlit.components.v1 as components
+
+# Set up Azure OpenAI API key and endpoint
+os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
+
+# Initialise Azure OpenAI client
+client = AzureOpenAI(
+    azure_endpoint=st.secrets["AZURE_ENDPOINT"],
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
+    api_version=st.secrets["AZURE_API_VERSION"]
+)
+
+# Select your Azure OpenAI model
+azure_model = 'gpt-4-0125-preview'
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,17 +32,17 @@ st.image(image, width=200)
 
 costar_prompt = """
 # CONTEXT #
-A business analyst with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn post.
+A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. The comment should be no more than 200 words, quotes one key point from the article, contextualises that quote, as well as include a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be no less than 300 words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
 # STYLE #
-The comment should be succinct, professional, and insightful.
+The comment should be succinct, professional, and insightful. Provide a more nuanced demonstration of your domain knowledge.
 
 #########
 
@@ -39,7 +52,7 @@ The tone should be reserved and professional.
 #########
 
 # AUDIENCE #
-The intended audience is the LinkedIn network of the business analyst, including peers, potential employers, and industry professionals.
+The intended audience is the LinkedIn network of the business analyst cum Gen AI practitioner, including peers, potential employers, and industry professionals.
 
 #########
 
@@ -53,32 +66,29 @@ Print only the LinkedIn comment and nothing but the LinkedIn comment in text for
 [ARTICLE]
 """
 
-# Function to use Ollama to pick the top headlines
-def pick_top_headlines(headlines, n=3):
+# Function to use Azure OpenAI to pick the top headlines
+def pick_top_headlines(headlines, n=5):
     numbered_headlines = [f"{i + 1}. {title}" for i, (title, _) in enumerate(headlines)]
     input_text = " and ".join(numbered_headlines)
-    input_text = f"As a business analyst with a strong interest and knowledge in data science and AI, pick the top {n} most interesting headlines from the following, and provide the serial number along with the headline: {input_text}"
+    input_text = f"As a business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI, pick the top {n} most interesting headlines from the following, and provide the serial number along with the headline: {input_text}"
 
     # Define the conversation history format
     conversation_history = [
         {'role': 'user', 'content': input_text}
     ]
 
-    # Use Ollama LLM to analyze the headlines and pick the top ones
-    stream = ollama.chat(
-        model='llama3:8b',
+    # Use Azure OpenAI to analyze the headlines and pick the top ones
+    response = client.chat.completions.create(
+        model=azure_model,
         messages=conversation_history,
-        stream=True
+        temperature=0.7
     )
 
-    # Collect response and parse the selected headlines
-    response = ""
-    for chunk in stream:
-        if 'message' in chunk and 'content' in chunk['message']:
-            response += chunk['message']['content']
+    response_text = response.choices[0].message.content
 
+    # Collect response and parse the selected headlines
     selected_headlines_with_numbers = []
-    for line in response.split("\n"):
+    for line in response_text.split("\n"):
         line = line.strip()
         if line and line[0].isdigit() and ". " in line:
             try:
@@ -94,25 +104,19 @@ def pick_top_headlines(headlines, n=3):
 
 # Function to generate comments for LinkedIn
 def generate_comment(headline):
-    # This prompt setup should match the expected input structure for Ollama
+    # This prompt setup should match the expected input structure for Azure OpenAI
     conversation_history = [
         {'role': 'user', 'content': f"'{costar_prompt}' '{headline}'."}
     ]
 
-    # Assuming 'ollama.chat()' expects 'messages' and not 'prompt'
-    response = ollama.chat(
-        model='llama3:8b',
+    response = client.chat.completions.create(
+        model=azure_model,
         messages=conversation_history,
-        stream=True  # Adjust this according to the actual function definition if 'stream' is not needed
+        temperature=0.7
     )
 
-    # Collect response from the stream
-    comment = ""
-    for chunk in response:
-        if 'message' in chunk and 'content' in chunk['message']:
-            comment += chunk['message']['content']
-
-    return comment.strip()
+    response_text = response.choices[0].message.content
+    return response_text.strip()
 
 
 def fetch_news_from_rss(url):
@@ -164,7 +168,7 @@ if feed_type == 'By Search Terms':
 
 
 topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0) if feed_type == 'By Topic' else ''
-location = st.text_input('Enter Location', '') if feed_type == 'By Country' else ''
+location = st.text_input('Enter Location', 'Singapore') if feed_type == 'By Country' else ''
 time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d') if feed_type == 'By Search Terms' else ''
 language = "en-SG"
 country = "SG"
@@ -176,7 +180,7 @@ if st.button('Generate'):
     rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
     headlines = fetch_news_from_rss(rss_url)
     if headlines:
-        top_headlines = pick_top_headlines(headlines, 3)
+        top_headlines = pick_top_headlines(headlines, 5)
         for title, link in top_headlines:
             comment = generate_comment(title)
             # Append the URL to the comment
