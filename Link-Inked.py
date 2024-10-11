@@ -69,16 +69,17 @@ Print only the LinkedIn comment and nothing but the LinkedIn comment in text for
 # Function to generate comments for LinkedIn
 def generate_comment(article_content):
     # This prompt setup should match the expected input structure for Azure OpenAI
-    prompt = f"{costar_prompt} {article_content}"
+    conversation_history = [
+        {'role': 'user', 'content': f"{costar_prompt} {article_content}"}
+    ]
 
-    response = openai.Completion.create(
-        engine=azure_model,
-        prompt=prompt,
-        max_tokens=500,
+    response = openai.ChatCompletion.create(
+        model=azure_model,
+        messages=conversation_history,
         temperature=0.7
     )
 
-    response_text = response['choices'][0]['text']
+    response_text = response['choices'][0]['message']['content']
     return response_text.strip()
 
 def copy_button(comment, unique_id):
