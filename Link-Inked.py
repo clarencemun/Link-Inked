@@ -32,7 +32,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be not more than 200 words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be less than 200 words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
