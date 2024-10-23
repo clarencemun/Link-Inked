@@ -37,7 +37,7 @@ Create a LinkedIn comment that is reserved, professional, insightful, and avoids
 #########
 
 # STYLE #
-The comment should be succinct, professional, and insightful. Provide a more nuanced demonstration of your domain knowledge.
+The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of your domain knowledge.
 
 #########
 
