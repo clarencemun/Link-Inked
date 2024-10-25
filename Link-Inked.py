@@ -25,7 +25,7 @@ client = AzureOpenAI(
     api_version=st.secrets["AZURE_API_VERSION"]
 )
 
-costar_prompt = secret_sauce
+costar_prompt = ["secret_sauce"]
 
 # Function to generate comments for LinkedIn
 def generate_comment(article_content):
