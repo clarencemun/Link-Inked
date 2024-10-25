@@ -25,7 +25,41 @@ client = AzureOpenAI(
     api_version=st.secrets["AZURE_API_VERSION"]
 )
 
-costar_prompt = ["secret_sauce"]
+costar_prompt = """
+# CONTEXT #
+A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
+
+#########
+
+# OBJECTIVE #
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be between 200 and 250 words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+
+#########
+
+# STYLE #
+The comment should be engaging, succinct, professional, and include nuances that demonstrate your domain knowledge.
+
+#########
+
+# TONE #
+The tone should be reserved and professional.
+
+#########
+
+# AUDIENCE #
+The intended audience is the LinkedIn network of the business analyst cum Gen AI practitioner, including peers, potential employers, and industry professionals.
+
+#########
+
+# RESPONSE #
+Print only the LinkedIn comment and nothing but the LinkedIn comment in text format.
+
+#############
+
+# START ANALYSIS #
+
+[ARTICLE]
+"""
 
 # Function to generate comments for LinkedIn
 def generate_comment(article_content):
