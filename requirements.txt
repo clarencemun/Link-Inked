@@ -1,5 +1,5 @@
 streamlit
+feedparser
 openai
-gTTS
 Pillow
-requests
+uuid
