@@ -73,7 +73,7 @@ def generate_comment(article_content):
     # Call the GPT model using the client object and handle response correctly
     try:
         response = client.chat.completions.create(
-            deployment_id="gpt-4-0125-preview",
+            model="gpt-4-0125-preview",
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7
         )
@@ -91,7 +91,7 @@ def pick_top_headlines(headlines, n=5):
 
     try:
         response = client.chat.completions.create(
-            deployment_id="gpt-4-0125-preview",
+            model="gpt-4-0125-preview",
             messages=[{'role': 'user', 'content': input_text}],
             temperature=0.7
         )
