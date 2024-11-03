@@ -153,10 +153,10 @@ feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By C
 
 # Conditional input fields based on feed type
 search_terms = []
-default_terms = ['Artificial Intelligence', 'Data Science', 'Business', 'Data Analytics', '']  # Default search terms
+default_terms = ['Artificial Intelligence', 'AI', 'Data Science', 'Business', 'Data Analytics', 'Machine Learning', 'LLM', 'NLP', '', '']  # Default search terms
 if feed_type == 'By Search Terms':
-    st.write("Enter up to five search terms:")
-    for i in range(5):
+    st.write("Enter up to ten search terms:")
+    for i in range(10):
         term = st.text_input(f'Search Term {i+1}', value=default_terms[i])
         search_terms.append(term)
 
