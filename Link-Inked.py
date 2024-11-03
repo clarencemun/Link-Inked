@@ -83,6 +83,26 @@ def generate_comment(article_content):
         st.error(f"An error occurred: {e}")
         return ""
 
+# Function to generate comments for LinkedIn manually using article content and URL
+def generate_manual_comment(article_content, article_url):
+    prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
+
+    # Call the GPT model using the client object and handle response correctly
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4-0125-preview",
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.7
+        )
+        response_text = response.choices[0].message.content
+        comment = response_text.strip()
+        if article_url.strip():
+            comment += f"\n\nRead the article here:\n\n{article_url}"
+        return comment
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        return ""
+
 # Function to pick the top headlines using your client object
 def pick_top_headlines(headlines, n=5):
     numbered_headlines = [f"{i + 1}. {title}" for i, (title, _) in enumerate(headlines)]
@@ -190,3 +210,20 @@ if st.button('Generate'):
             st.write("Failed to select top headlines.")
     else:
         st.write("No news items found.")
+
+# Streamlit UI setup for manual comment generation
+st.header('Generate LinkedIn Comment Manually')
+
+# Input fields for article URL and content
+article_url = st.text_input("Paste the article URL here:")
+article_content = st.text_area("Paste the article content here:")
+
+if st.button('Generate Comment'):
+    if article_content.strip():
+        comment = generate_manual_comment(article_content, article_url)
+        unique_id = str(uuid.uuid4())
+        st.subheader("Generated Comment:")
+        st.write(comment)
+        copy_button(comment, unique_id)
+    else:
+        st.write("Please paste the article content to generate a comment.")
