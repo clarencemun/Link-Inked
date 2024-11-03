@@ -169,7 +169,7 @@ def copy_button(comment, unique_id):
     components.html(html_content, height=30)  # Adjust height as necessary
 
 # Streamlit UI setup
-feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms'], index=0)
+feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input'], index=0)
 
 # Conditional input fields based on feed type
 search_terms = []
@@ -187,7 +187,7 @@ language = "en-SG"
 country = "SG"
 
 # Generate RSS URL and fetch news
-if st.button('Generate'):
+if feed_type != 'Manual Input' and st.button('Generate'):
     # Generate RSS URL based on user input
     rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
     headlines = fetch_news_from_rss(rss_url)
@@ -212,18 +212,19 @@ if st.button('Generate'):
         st.write("No news items found.")
 
 # Streamlit UI setup for manual comment generation
-st.header('Generate LinkedIn Comment Manually')
+if feed_type == 'Manual Input':
+    st.header('Generate LinkedIn Comment Manually')
 
-# Input fields for article URL and content
-article_url = st.text_input("Paste the article URL here:")
-article_content = st.text_area("Paste the article content here:")
+    # Input fields for article URL and content
+    article_url = st.text_input("Paste the article URL here:")
+    article_content = st.text_area("Paste the article content here:")
 
-if st.button('Generate Comment'):
-    if article_content.strip():
-        comment = generate_manual_comment(article_content, article_url)
-        unique_id = str(uuid.uuid4())
-        st.subheader("Generated Comment:")
-        st.write(comment)
-        copy_button(comment, unique_id)
-    else:
-        st.write("Please paste the article content to generate a comment.")
+    if st.button('Generate Comment'):
+        if article_content.strip():
+            comment = generate_manual_comment(article_content, article_url)
+            unique_id = str(uuid.uuid4())
+            st.subheader("Generated Comment:")
+            st.write(comment)
+            copy_button(comment, unique_id)
+        else:
+            st.write("Please paste the article content to generate a comment.")
