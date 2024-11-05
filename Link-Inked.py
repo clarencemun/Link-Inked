@@ -32,14 +32,18 @@ if os.path.exists(image_path):
 else:
     st.write("Banner image not found.")
 
-costar_prompt = """
+# Define word limit for the comments
+WORD_LIMIT_MIN = 250
+WORD_LIMIT_MAX = 300
+
+costar_prompt = f"""
 # CONTEXT #
 A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be between 250 and 300 words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
@@ -184,13 +188,44 @@ def copy_button(comment, unique_id):
     components.html(html_content, height=30)  # Adjust height as necessary
 
 def improve_comment(existing_comment, improvement_prompt, article_url=None):
-    prompt = f"The following comment needs to be improved based on the additional instructions provided:\n\n# COMMENT #\n{existing_comment}\n\n# INSTRUCTIONS #\n{improvement_prompt}\n\nPlease provide the improved comment in the same format, ensuring it remains professional, insightful, and within the context."
+    improve_prompt = f"""
+# CONTEXT #
+A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided.
+
+#########
+
+# OBJECTIVE #
+Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include the original summary of the article, enhanced with the given instructions.
+
+#########
+
+# STYLE #
+The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of domain knowledge.
+
+#########
+
+# TONE #
+The tone should be reserved and professional.
+
+#########
+
+# RESPONSE #
+Print only the improved LinkedIn comment and nothing but the improved LinkedIn comment in text format.
+
+#############
+
+# COMMENT #
+{existing_comment}
+
+# INSTRUCTIONS #
+{improvement_prompt}
+"""
 
     # Call the GPT model using the client object and handle response correctly
     try:
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
-            messages=[{'role': 'user', 'content': prompt}],
+            messages=[{'role': 'user', 'content': improve_prompt}],
             temperature=0.7
         )
         response_text = response.choices[0].message.content.strip()
@@ -255,36 +290,3 @@ if feed_type != 'Manual Input' and st.button('Generate'):
                 st.write("Failed to select top headlines.")
         else:
             st.write("No news items found.")
-
-# Streamlit UI setup for manual comment generation
-if feed_type == 'Manual Input':
-    st.header('Generate LinkedIn Comment Manually')
-
-    # Input fields for article URL and content
-    article_url = st.text_input("Paste the article URL here:")
-    article_content = st.text_area("Paste the article content here:")
-
-    if st.button('Generate Comment'):
-        if article_content.strip():
-            comment = generate_manual_comment(article_content, article_url)
-            unique_id = str(uuid.uuid4())
-            st.subheader("Generated Comment:")
-            st.write(comment)
-            copy_button(comment, unique_id)
-        else:
-            st.write("Please paste the article content to generate a comment.")
-
-# Streamlit UI setup for improving an existing comment
-st.header('Improve an Existing Comment')
-existing_comment = st.text_area("Paste the existing comment here:")
-improvement_prompt = st.text_area("Enter instructions for improving the comment:")
-
-if st.button('Improve Comment'):
-    if existing_comment.strip() and improvement_prompt.strip():
-        improved_comment = improve_comment(existing_comment, improvement_prompt, article_url)
-        unique_id = str(uuid.uuid4())
-        st.subheader("Improved Comment:")
-        st.write(improved_comment)
-        copy_button(improved_comment, unique_id)
-    else:
-        st.write("Please provide both the existing comment and improvement instructions.")
