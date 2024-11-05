@@ -32,9 +32,14 @@ if os.path.exists(image_path):
 else:
     st.write("Banner image not found.")
 
-# Define word limit for the comments using sliders
-WORD_LIMIT_MIN = st.slider('Select minimum word limit', 100, 500, 250, step=10)
-WORD_LIMIT_MAX = st.slider('Select maximum word limit', 100, 500, 300, step=10)
+# Define word limit for the comments using a range slider
+WORD_LIMIT_MIN, WORD_LIMIT_MAX = st.slider(
+    'Select word limit range',
+    min_value=100,
+    max_value=500,
+    value=(250, 300),
+    step=10
+)
 
 costar_prompt = f"""
 # CONTEXT #
