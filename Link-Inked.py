@@ -132,7 +132,7 @@ def pick_top_headlines(headlines, n=5):
 
     # Return only the selected headlines based on their numbers
     selected_indices = [number - 1 for number, headline in selected_headlines_with_numbers]
-    return [headlines[index] for index in selected_indices if index < len(headlines)]
+    return [headlines[index] for index in selected_indices if index < len(headlines)][:n]
 
 def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
@@ -219,7 +219,7 @@ if feed_type != 'Manual Input' and st.button('Generate'):
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
-            top_headlines = pick_top_headlines(headlines, 1)
+            top_headlines = pick_top_headlines(headlines, 5)
             if top_headlines:
                 for title, link in top_headlines:
                     st.subheader(title)
