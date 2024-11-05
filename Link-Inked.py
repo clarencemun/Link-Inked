@@ -183,6 +183,22 @@ def copy_button(comment, unique_id):
     """
     components.html(html_content, height=30)  # Adjust height as necessary
 
+def improve_comment(existing_comment, improvement_prompt):
+    prompt = f"The following comment needs to be improved based on the additional instructions provided:\n\n# COMMENT #\n{existing_comment}\n\n# INSTRUCTIONS #\n{improvement_prompt}\n\nPlease provide the improved comment in the same format, ensuring it remains professional, insightful, and within the context."
+
+    # Call the GPT model using the client object and handle response correctly
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4-0125-preview",
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.7
+        )
+        response_text = response.choices[0].message.content
+        return response_text.strip()
+    except Exception as e:
+        st.error(f"An error occurred while improving the comment: {e}")
+        return ""
+
 # Streamlit UI setup
 feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input', 'Generate from URL'], index=0)
 
@@ -255,3 +271,18 @@ if feed_type == 'Manual Input':
             copy_button(comment, unique_id)
         else:
             st.write("Please paste the article content to generate a comment.")
+
+# Streamlit UI setup for improving an existing comment
+st.header('Improve an Existing Comment')
+existing_comment = st.text_area("Paste the existing comment here:")
+improvement_prompt = st.text_area("Enter instructions for improving the comment:")
+
+if st.button('Improve Comment'):
+    if existing_comment.strip() and improvement_prompt.strip():
+        improved_comment = improve_comment(existing_comment, improvement_prompt)
+        unique_id = str(uuid.uuid4())
+        st.subheader("Improved Comment:")
+        st.write(improved_comment)
+        copy_button(improved_comment, unique_id)
+    else:
+        st.write("Please provide both the existing comment and improvement instructions.")
