@@ -192,7 +192,7 @@ if feed_type != 'Manual Input' and st.button('Generate'):
     rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
     headlines = fetch_news_from_rss(rss_url)
     if headlines:
-        top_headlines = pick_top_headlines(headlines, 5)
+        top_headlines = pick_top_headlines(headlines, 1)
         if top_headlines:
             for title, link in top_headlines:
                 st.subheader(title)
