@@ -290,3 +290,36 @@ if feed_type != 'Manual Input' and st.button('Generate'):
                 st.write("Failed to select top headlines.")
         else:
             st.write("No news items found.")
+
+# Streamlit UI setup for manual comment generation
+if feed_type == 'Manual Input':
+    st.header('Generate LinkedIn Comment Manually')
+
+    # Input fields for article URL and content
+    article_url = st.text_input("Paste the article URL here:")
+    article_content = st.text_area("Paste the article content here:")
+
+    if st.button('Generate Comment'):
+        if article_content.strip():
+            comment = generate_manual_comment(article_content, article_url)
+            unique_id = str(uuid.uuid4())
+            st.subheader("Generated Comment:")
+            st.write(comment)
+            copy_button(comment, unique_id)
+        else:
+            st.write("Please paste the article content to generate a comment.")
+
+# Streamlit UI setup for improving an existing comment
+st.header('Improve an Existing Comment')
+existing_comment = st.text_area("Paste the existing comment here:")
+improvement_prompt = st.text_area("Enter instructions for improving the comment:")
+
+if st.button('Improve Comment'):
+    if existing_comment.strip() and improvement_prompt.strip():
+        improved_comment = improve_comment(existing_comment, improvement_prompt, article_url)
+        unique_id = str(uuid.uuid4())
+        st.subheader("Improved Comment:")
+        st.write(improved_comment)
+        copy_button(improved_comment, unique_id)
+    else:
+        st.write("Please provide both the existing comment and improvement instructions.")
