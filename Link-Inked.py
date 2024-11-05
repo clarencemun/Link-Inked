@@ -7,8 +7,8 @@ import uuid
 import streamlit.components.v1 as components
 import openai
 from openai import AzureOpenAI
-
-
+import requests
+from bs4 import BeautifulSoup
 
 # Set up Azure OpenAI API key and endpoint
 os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
@@ -152,6 +152,21 @@ def generate_rss_url(feed_type, search_terms='', topic='', location='', time_fra
         return f"{base_url}/search?q={formatted_query}+when:{time_frame}&hl={language}&gl={country}&ceid={country}:{language}"
     return base_url  # default to top headlines if no type matches
 
+def extract_article_content(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            paragraphs = soup.find_all('p')
+            article_content = ' '.join([p.get_text() for p in paragraphs])
+            return article_content.strip()
+        else:
+            st.error(f"Failed to fetch the article. Status code: {response.status_code}")
+            return ""
+    except Exception as e:
+        st.error(f"An error occurred while extracting the article: {e}")
+        return ""
+
 def copy_button(comment, unique_id):
     html_content = f"""
         <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
@@ -169,7 +184,7 @@ def copy_button(comment, unique_id):
     components.html(html_content, height=30)  # Adjust height as necessary
 
 # Streamlit UI setup
-feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input'], index=0)
+feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input', 'Generate from URL'], index=0)
 
 # Conditional input fields based on feed type
 search_terms = []
@@ -183,33 +198,45 @@ if feed_type == 'By Search Terms':
 topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0) if feed_type == 'By Topic' else ''
 location = st.text_input('Enter Location', 'Singapore') if feed_type == 'By Country' else ''
 time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d') if feed_type == 'By Search Terms' else ''
+article_url = st.text_input("Enter the Article URL:") if feed_type == 'Generate from URL' else ''
 language = "en-SG"
 country = "SG"
 
 # Generate RSS URL and fetch news
 if feed_type != 'Manual Input' and st.button('Generate'):
-    # Generate RSS URL based on user input
-    rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
-    headlines = fetch_news_from_rss(rss_url)
-    if headlines:
-        top_headlines = pick_top_headlines(headlines, 1)
-        if top_headlines:
-            for title, link in top_headlines:
-                st.subheader(title)
-                comment = generate_comment(title)
-                if comment:
-                    # Append the URL to the comment
-                    full_comment = f"{comment}\n\nRead more here: {link}"
-                    unique_id = str(uuid.uuid4())
-                    st.write(full_comment)
-                    copy_button(full_comment, unique_id)
-                    st.write('---')
-                else:
-                    st.write("Failed to generate comment.")
+    if feed_type == 'Generate from URL' and article_url.strip():
+        article_content = extract_article_content(article_url)
+        if article_content:
+            comment = generate_manual_comment(article_content, article_url)
+            unique_id = str(uuid.uuid4())
+            st.subheader("Generated Comment:")
+            st.write(comment)
+            copy_button(comment, unique_id)
         else:
-            st.write("Failed to select top headlines.")
+            st.write("Failed to extract content from the provided URL.")
     else:
-        st.write("No news items found.")
+        # Generate RSS URL based on user input
+        rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame, language, country)
+        headlines = fetch_news_from_rss(rss_url)
+        if headlines:
+            top_headlines = pick_top_headlines(headlines, 1)
+            if top_headlines:
+                for title, link in top_headlines:
+                    st.subheader(title)
+                    comment = generate_comment(title)
+                    if comment:
+                        # Append the URL to the comment
+                        full_comment = f"{comment}\n\nRead more here: {link}"
+                        unique_id = str(uuid.uuid4())
+                        st.write(full_comment)
+                        copy_button(full_comment, unique_id)
+                        st.write('---')
+                    else:
+                        st.write("Failed to generate comment.")
+            else:
+                st.write("Failed to select top headlines.")
+        else:
+            st.write("No news items found.")
 
 # Streamlit UI setup for manual comment generation
 if feed_type == 'Manual Input':
