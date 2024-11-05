@@ -183,7 +183,7 @@ def copy_button(comment, unique_id):
     """
     components.html(html_content, height=30)  # Adjust height as necessary
 
-def improve_comment(existing_comment, improvement_prompt):
+def improve_comment(existing_comment, improvement_prompt, article_url=None):
     prompt = f"The following comment needs to be improved based on the additional instructions provided:\n\n# COMMENT #\n{existing_comment}\n\n# INSTRUCTIONS #\n{improvement_prompt}\n\nPlease provide the improved comment in the same format, ensuring it remains professional, insightful, and within the context."
 
     # Call the GPT model using the client object and handle response correctly
@@ -193,8 +193,10 @@ def improve_comment(existing_comment, improvement_prompt):
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7
         )
-        response_text = response.choices[0].message.content
-        return response_text.strip()
+        response_text = response.choices[0].message.content.strip()
+        if article_url:
+            response_text += f"\n\nRead the article here:\n\n{article_url}"
+        return response_text
     except Exception as e:
         st.error(f"An error occurred while improving the comment: {e}")
         return ""
@@ -279,7 +281,7 @@ improvement_prompt = st.text_area("Enter instructions for improving the comment:
 
 if st.button('Improve Comment'):
     if existing_comment.strip() and improvement_prompt.strip():
-        improved_comment = improve_comment(existing_comment, improvement_prompt)
+        improved_comment = improve_comment(existing_comment, improvement_prompt, article_url)
         unique_id = str(uuid.uuid4())
         st.subheader("Improved Comment:")
         st.write(improved_comment)
