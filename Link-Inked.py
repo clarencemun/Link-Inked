@@ -48,7 +48,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be concise, do not address the author, cut unnecessary pleasantries. Talk about the underlying technologies where applicable. The comment should be between {WORD_LIMIT_MAX} words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be concise, do not address the author, cut unnecessary pleasantries. Talk about the underlying technologies where applicable. The comment should be not more than {WORD_LIMIT_MAX} words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
@@ -200,7 +200,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include the original summary of the article, enhanced with the given instructions.
+Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be not more than {WORD_LIMIT_MAX} words and include the original summary of the article, enhanced with the given instructions.
 
 #########
 
