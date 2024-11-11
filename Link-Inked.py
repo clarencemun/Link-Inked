@@ -33,11 +33,11 @@ else:
     st.write("Banner image not found.")
 
 # Define word limit for the comments using a range slider
-WORD_LIMIT_MIN, WORD_LIMIT_MAX = st.slider(
-    'Select word limit range',
+WORD_LIMIT_MAX = st.slider(
+    'Select maximum word limit',
     min_value=100,
     max_value=500,
-    value=(250, 300),
+    value=300,
     step=10
 )
 
@@ -48,7 +48,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Talk about the underlying technologies where applicable. The comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be concise, do not address the author, cut unnecessary pleasantries. Talk about the underlying technologies where applicable. The comment should be between {WORD_LIMIT_MAX} words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
