@@ -26,23 +26,25 @@ else:
 with st.sidebar:
     st.header("Settings")
     # Select Local or Cloud for the model
-    model_type = st.radio("Select Model Type", ('Local (Ollama)', 'Cloud (Azure)'))
+    model_type = st.radio("Select Model Type", ('Local (Ollama)', 'Cloud (Azure)'), key='model_type')
     
     # Select your Ollama model if Local is chosen
     if model_type == 'Local (Ollama)':
         ollama_model = st.selectbox(
             'Select your Ollama model',
             ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
-            index=5  # Default to 'mistral'
+            index=5,  # Default to 'mistral'
+            key='ollama_model'
         )
 
     # Define min and max word limit for the comments using a range slider
     WORD_LIMIT_MIN, WORD_LIMIT_MAX = st.slider(
         'Select word limit range',
-        min_value=50,
-        max_value=500,
-        value=(100, 200),
-        step=10
+        min_value=100,
+        max_value=1000,
+        value=(200, 400),
+        step=10,
+        key='word_limit_range'
     )
 
 # Azure OpenAI setup (only if Cloud is selected)
@@ -61,12 +63,12 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be concise, do not address the author, cut unnecessary pleasantries. Talk about the underlying technologies where applicable. The comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include a summary of the article and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. Talk about the underlying technologies and implications where applicable. The comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
 # STYLE #
-The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of your domain knowledge.
+The comment should be engaging, succinct yet detailed, professional, and insightful. Provide a deeper demonstration of your domain knowledge.
 
 #########
 
@@ -120,7 +122,7 @@ def generate_azure_comment(article_content):
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
             messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.7
+            temperature=0.9  # Increased temperature for more creative and varied responses
         )
         response_text = response.choices[0].message.content
         return response_text.strip()
@@ -170,9 +172,14 @@ def extract_article_content(url):
         response = requests.get(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
+            # Extract the title and main content paragraphs
+            title = soup.find('h1')
+            title_text = title.get_text().strip() if title else ""
             paragraphs = soup.find_all('p')
             article_content = ' '.join([p.get_text() for p in paragraphs])
-            return article_content.strip()
+            # Combine title and content for better context
+            full_content = f"{title_text}. {article_content.strip()}"
+            return full_content.strip()
         else:
             st.error(f"Failed to fetch the article. Status code: {response.status_code}")
             return ""
@@ -181,12 +188,12 @@ def extract_article_content(url):
         return ""
 
 # Streamlit UI setup
-feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input', 'Generate from URL'], index=0)
+feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input', 'Generate from URL'], index=0, key='feed_type')
 
 # Conditional input fields based on feed type
 if feed_type == 'Generate from URL':
-    article_url = st.text_input("Enter the Article URL:")
-    if st.button('Generate'):
+    article_url = st.text_input("Enter the Article URL:", key='article_url_generate')
+    if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
             if model_type == 'Local (Ollama)':
@@ -199,9 +206,10 @@ if feed_type == 'Generate from URL':
             copy_button(comment, unique_id, link=article_url)
 elif feed_type == 'Manual Input':
     st.header('Generate LinkedIn Comment Manually')
-    article_content = st.text_area("Paste the article content here:")
-    article_url = st.text_input("Enter the Article URL (optional):")
-    if st.button('Generate Comment'):
+    # Manual input mode to provide article content manually
+    article_content = st.text_area("Paste the article content here:", key='manual_article_content')
+    article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
+    if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
             if model_type == 'Local (Ollama)':
                 comment = generate_comment(article_content)
@@ -214,19 +222,20 @@ elif feed_type == 'Manual Input':
         else:
             st.write("Please paste the article content to generate a comment.")
 else:
+    # RSS feed types
     search_terms = []
     default_terms = ['Artificial Intelligence', 'AI', 'Data Science', 'Business', 'Data Analytics', 'Machine Learning', 'LLM', 'NLP', '', '']  # Default search terms
     if feed_type == 'By Search Terms':
         st.write("Enter up to ten search terms:")
         for i in range(10):
-            term = st.text_input(f'Search Term {i+1}', value=default_terms[i])
+            term = st.text_input(f'Search Term {i+1}', value=default_terms[i], key=f'search_term_{i}')
             search_terms.append(term)
 
-    topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0) if feed_type == 'By Topic' else ''
-    location = st.text_input('Enter Location', 'Singapore') if feed_type == 'By Country' else ''
-    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d') if feed_type == 'By Search Terms' else ''
+    topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0, key='topic') if feed_type == 'By Topic' else ''
+    location = st.text_input('Enter Location', 'Singapore', key='location') if feed_type == 'By Country' else ''
+    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d', key='time_frame') if feed_type == 'By Search Terms' else ''
 
-    if st.button('Generate'):
+    if st.button('Generate', key='generate_headlines_button'):
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
@@ -244,9 +253,9 @@ else:
 
 # Streamlit UI setup for improving an existing comment
 st.header('Improve an Existing Comment')
-existing_comment = st.text_area("Paste the existing comment here:")
-improvement_prompt = st.text_area("Enter instructions for improving the comment:")
-if st.button('Improve Comment'):
+existing_comment = st.text_area("Paste the existing comment here:", key='existing_comment')
+improvement_prompt = st.text_area("Enter instructions for improving the comment:", key='improvement_prompt')
+if st.button('Improve Comment', key='improve_button'):
     if existing_comment.strip() and improvement_prompt.strip():
         improve_prompt = f"""
 # CONTEXT #
@@ -296,7 +305,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
                     messages=[{'role': 'user', 'content': improve_prompt}],
-                    temperature=0.7
+                    temperature=0.9
                 )
                 improved_comment = response.choices[0].message.content.strip()
             unique_id = str(uuid.uuid4())
