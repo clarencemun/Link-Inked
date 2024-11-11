@@ -33,7 +33,7 @@ with st.sidebar:
         ollama_model = st.selectbox(
             'Select your Ollama model',
             ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
-            index=5,  # Default to 'mistral'
+            index=3,  # Default to 'qwen2'
             key='ollama_model'
         )
 
@@ -42,7 +42,7 @@ with st.sidebar:
         'Select word limit range',
         min_value=100,
         max_value=500,
-        value=(200, 300),
+        value=(150, 200),
         step=10,
         key='word_limit_range'
     )
