@@ -1,24 +1,15 @@
 import urllib.parse
 import streamlit as st
 import feedparser
+import ollama
 from PIL import Image
 import os
 import uuid
 import streamlit.components.v1 as components
-import openai
-from openai import AzureOpenAI
 import requests
 from bs4 import BeautifulSoup
-
-# Set up Azure OpenAI API key and endpoint
-os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
-
-# Initialise Azure OpenAI client
-client = AzureOpenAI(
-    azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
-    api_version=st.secrets["AZURE_API_VERSION"]
-)
+import openai
+from openai import AzureOpenAI
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,16 +23,43 @@ if os.path.exists(image_path):
 else:
     st.write("Banner image not found.")
 
-# Define word limit for the comments using a range slider
-WORD_LIMIT_MAX = st.slider(
-    'Select maximum word limit',
-    min_value=100,
-    max_value=500,
-    value=200,
-    step=10
-)
+# Create a settings sidebar for model selection and word limit settings
+with st.sidebar:
+    st.header("Settings")
+    # Select deployment type: Local (Ollama) or Cloud (Azure OpenAI)
+    deployment_type = st.selectbox(
+        'Select Deployment Type',
+        ['Local (Ollama)', 'Cloud (Azure OpenAI)'],
+        index=0  # Default to 'Local (Ollama)'
+    )
 
-costar_prompt = f"""
+    # Select your Ollama model
+    if deployment_type == 'Local (Ollama)':
+        ollama_model = st.selectbox(
+            'Select your Ollama model',
+            ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
+            index=5  # Default to 'mistral'
+        )
+
+    # Define max word limit for the comments using a slider
+    WORD_LIMIT_MAX = st.slider(
+        'Select max word limit',
+        min_value=100,
+        max_value=500,
+        value=200,
+        step=10
+    )
+
+# Azure OpenAI setup
+if deployment_type == 'Cloud (Azure OpenAI)':
+    os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
+    client = AzureOpenAI(
+        azure_endpoint=st.secrets["AZURE_ENDPOINT"],
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=st.secrets["AZURE_API_VERSION"]
+    )
+
+costar_prompt = """
 # CONTEXT #
 A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
 
@@ -73,75 +91,154 @@ Print only the LinkedIn comment and nothing but the LinkedIn comment in text for
 #############
 
 # START ANALYSIS #
+
+[ARTICLE]
 """
 
-# Function to generate comments for LinkedIn using your client object
+# Function to generate comments for LinkedIn
 def generate_comment(article_content):
-    prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
+    prompt = f"{costar_prompt}\n{article_content}"
 
-    # Call the GPT model using the client object and handle response correctly
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
-            messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.7
-        )
-        response_text = response.choices[0].message.content
-        return response_text.strip()
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        return ""
+    if deployment_type == 'Local (Ollama)':
+        # Define the conversation history format for Ollama
+        conversation_history = [
+            {'role': 'user', 'content': prompt}
+        ]
+        # Call the Ollama model using the client object and handle response correctly
+        try:
+            response = ollama.chat(
+                model=ollama_model,
+                messages=conversation_history,
+                stream=True
+            )
+            response_text = ""
+            for chunk in response:
+                if 'message' in chunk and 'content' in chunk['message']:
+                    response_text += chunk['message']['content']
+            return response_text.strip()
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+            return ""
+    elif deployment_type == 'Cloud (Azure OpenAI)':
+        # Call the GPT model using the client object and handle response correctly
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4-0125-preview",
+                messages=[{'role': 'user', 'content': prompt}],
+                temperature=0.7
+            )
+            response_text = response.choices[0].message.content
+            return response_text.strip()
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+            return ""
 
 # Function to generate comments for LinkedIn manually using article content and URL
 def generate_manual_comment(article_content, article_url):
-    prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
+    comment = generate_comment(article_content)
+    if article_url.strip():
+        comment += f"\n\nRead the article here:\n\n{article_url}"
+    return comment
 
-    # Call the GPT model using the client object and handle response correctly
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
-            messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.7
-        )
-        response_text = response.choices[0].message.content
-        comment = response_text.strip()
-        if article_url.strip():
-            comment += f"\n\nRead the article here:\n\n{article_url}"
-        return comment
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        return ""
+# Function to improve a generated comment using a custom prompt
+def improve_comment(existing_comment, improvement_prompt, article_url=None):
+    improve_prompt = f"""
+# CONTEXT #
+A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided.
 
-# Function to pick the top headlines using your client object
+#########
+
+# OBJECTIVE #
+Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be no more than {WORD_LIMIT_MAX} words and include the original summary of the article, enhanced with the given instructions.
+
+#########
+
+# STYLE #
+The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of domain knowledge.
+
+#########
+
+# TONE #
+The tone should be reserved and professional.
+
+#########
+
+# RESPONSE #
+Print only the improved LinkedIn comment and nothing but the improved LinkedIn comment in text format.
+
+#############
+
+# COMMENT #
+{existing_comment}
+
+# INSTRUCTIONS #
+{improvement_prompt}
+"""
+
+    if deployment_type == 'Local (Ollama)':
+        # Define the conversation history format for Ollama
+        conversation_history = [
+            {'role': 'user', 'content': improve_prompt}
+        ]
+        # Call the Ollama model using the client object and handle response correctly
+        try:
+            response = ollama.chat(
+                model=ollama_model,
+                messages=conversation_history,
+                stream=True
+            )
+            response_text = ""
+            for chunk in response:
+                if 'message' in chunk and 'content' in chunk['message']:
+                    response_text += chunk['message']['content']
+            if article_url:
+                response_text += f"\n\nRead the article here:\n\n{article_url}"
+            return response_text.strip()
+        except Exception as e:
+            st.error(f"An error occurred while improving the comment: {e}")
+            return ""
+    elif deployment_type == 'Cloud (Azure OpenAI)':
+        # Call the GPT model using the client object and handle response correctly
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4-0125-preview",
+                messages=[{'role': 'user', 'content': improve_prompt}],
+                temperature=0.7
+            )
+            response_text = response.choices[0].message.content.strip()
+            if article_url:
+                response_text += f"\n\nRead the article here:\n\n{article_url}"
+            return response_text
+        except Exception as e:
+            st.error(f"An error occurred while improving the comment: {e}")
+            return ""
+
+# Function to pick the top headlines
 def pick_top_headlines(headlines, n=5):
     numbered_headlines = [f"{i + 1}. {title}" for i, (title, _) in enumerate(headlines)]
     input_text = "\n".join(numbered_headlines)
     input_text = f"As a business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI, pick the top {n} most interesting headlines from the following list, and provide the serial number along with the headline:\n{input_text}"
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
-            messages=[{'role': 'user', 'content': input_text}],
-            temperature=0.7
-        )
-        reply = response.choices[0].message.content
+        response = generate_comment(input_text)
+        reply_lines = response.split("\n")
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        st.error(f"An error occurred while picking top headlines: {e}")
         return []
 
     selected_headlines_with_numbers = []
-    for line in reply.split("\n"):
+    for line in reply_lines:
         line = line.strip()
         if line and line[0].isdigit() and ". " in line:
             try:
                 number, headline = line.split(". ", 1)
                 selected_headlines_with_numbers.append((int(number), headline))
             except ValueError:
-                pass
+                continue
 
     # Return only the selected headlines based on their numbers
     selected_indices = [number - 1 for number, headline in selected_headlines_with_numbers]
-    return [headlines[index] for index in selected_indices if index < len(headlines)][:n]
+    return [(headlines[index][0], headlines[index][1]) for index in selected_indices if index < len(headlines)][:n]
 
 def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
@@ -192,55 +289,6 @@ def copy_button(comment, unique_id):
     """
     components.html(html_content, height=30)  # Adjust height as necessary
 
-def improve_comment(existing_comment, improvement_prompt, article_url=None):
-    improve_prompt = f"""
-# CONTEXT #
-A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided.
-
-#########
-
-# OBJECTIVE #
-Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be not more than {WORD_LIMIT_MAX} words and include the original summary of the article, enhanced with the given instructions.
-
-#########
-
-# STYLE #
-The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of domain knowledge.
-
-#########
-
-# TONE #
-The tone should be reserved and professional.
-
-#########
-
-# RESPONSE #
-Print only the improved LinkedIn comment and nothing but the improved LinkedIn comment in text format.
-
-#############
-
-# COMMENT #
-{existing_comment}
-
-# INSTRUCTIONS #
-{improvement_prompt}
-"""
-
-    # Call the GPT model using the client object and handle response correctly
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
-            messages=[{'role': 'user', 'content': improve_prompt}],
-            temperature=0.7
-        )
-        response_text = response.choices[0].message.content.strip()
-        if article_url:
-            response_text += f"\n\nRead the article here:\n\n{article_url}"
-        return response_text
-    except Exception as e:
-        st.error(f"An error occurred while improving the comment: {e}")
-        return ""
-
 # Streamlit UI setup
 feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input', 'Generate from URL'], index=0)
 
@@ -279,7 +327,7 @@ if feed_type != 'Manual Input' and st.button('Generate'):
         if headlines:
             top_headlines = pick_top_headlines(headlines, 5)
             if top_headlines:
-                for title, link in top_headlines:
+                for title, link in top_headlines:  # Ensure we have title, link pairs
                     st.subheader(title)
                     comment = generate_comment(title)
                     if comment:
@@ -314,17 +362,15 @@ if feed_type == 'Manual Input':
         else:
             st.write("Please paste the article content to generate a comment.")
 
-# Streamlit UI setup for improving an existing comment
-st.header('Improve an Existing Comment')
-existing_comment = st.text_area("Paste the existing comment here:")
-improvement_prompt = st.text_area("Enter instructions for improving the comment:")
-
+# Improvement input for any generated comment (appears at the bottom of the page)
+st.header('Improve a Generated Comment')
+existing_comment = st.text_area("Paste the comment you want to improve here:")
+improvement_prompt = st.text_area("Enter a prompt to improve the pasted comment:")
 if st.button('Improve Comment'):
     if existing_comment.strip() and improvement_prompt.strip():
-        improved_comment = improve_comment(existing_comment, improvement_prompt, article_url)
-        unique_id = str(uuid.uuid4())
+        improved_comment = improve_comment(existing_comment, improvement_prompt)
         st.subheader("Improved Comment:")
         st.write(improved_comment)
-        copy_button(improved_comment, unique_id)
+        copy_button(improved_comment, str(uuid.uuid4()))
     else:
-        st.write("Please provide both the existing comment and improvement instructions.")
+        st.warning("Please enter both a comment and an improvement prompt before improving the comment.")
