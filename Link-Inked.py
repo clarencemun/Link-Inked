@@ -51,13 +51,18 @@ with st.sidebar:
     )
 
 # Azure OpenAI setup
+client = None
 if deployment_type == 'Cloud (Azure OpenAI)':
-    os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
-    client = AzureOpenAI(
-        azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=st.secrets["AZURE_API_VERSION"]
-    )
+    try:
+        os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
+        client = AzureOpenAI(
+            azure_endpoint=st.secrets["AZURE_ENDPOINT"],
+            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+            api_version=st.secrets["AZURE_API_VERSION"]
+        )
+    except Exception as e:
+        st.error("Azure OpenAI setup failed. Please check your API keys and endpoint.")
+        st.stop()  # Stop further execution if Azure setup fails
 
 costar_prompt = """
 # CONTEXT #
@@ -117,12 +122,12 @@ def generate_comment(article_content):
                     response_text += chunk['message']['content']
             return response_text.strip()
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"An error occurred with Ollama: {e}")
             return ""
     elif deployment_type == 'Cloud (Azure OpenAI)':
         # Call the GPT model using the client object and handle response correctly
         try:
-            response = client.chat.completions.create(
+            response = client.chat_completions.create(
                 model="gpt-4-0125-preview",
                 messages=[{'role': 'user', 'content': prompt}],
                 temperature=0.7
@@ -130,7 +135,7 @@ def generate_comment(article_content):
             response_text = response.choices[0].message.content
             return response_text.strip()
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"An error occurred with Azure OpenAI: {e}")
             return ""
 
 # Function to generate comments for LinkedIn manually using article content and URL
@@ -195,12 +200,12 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response_text += f"\n\nRead the article here:\n\n{article_url}"
             return response_text.strip()
         except Exception as e:
-            st.error(f"An error occurred while improving the comment: {e}")
+            st.error(f"An error occurred while improving the comment with Ollama: {e}")
             return ""
     elif deployment_type == 'Cloud (Azure OpenAI)':
         # Call the GPT model using the client object and handle response correctly
         try:
-            response = client.chat.completions.create(
+            response = client.chat_completions.create(
                 model="gpt-4-0125-preview",
                 messages=[{'role': 'user', 'content': improve_prompt}],
                 temperature=0.7
@@ -210,7 +215,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response_text += f"\n\nRead the article here:\n\n{article_url}"
             return response_text
         except Exception as e:
-            st.error(f"An error occurred while improving the comment: {e}")
+            st.error(f"An error occurred while improving the comment with Azure OpenAI: {e}")
             return ""
 
 # Function to pick the top headlines
