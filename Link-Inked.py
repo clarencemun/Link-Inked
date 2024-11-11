@@ -26,10 +26,10 @@ else:
 with st.sidebar:
     st.header("Settings")
     # Select Local or Cloud for the model
-    model_type = st.radio("Select Model Type", ('Local (Ollama)', 'Cloud (Azure)'), key='model_type')
+    model_type = st.radio("Select Model Type", ('Local', 'Cloud'), key='model_type')
     
     # Select your Ollama model if Local is chosen
-    if model_type == 'Local (Ollama)':
+    if model_type == 'Local':
         ollama_model = st.selectbox(
             'Select your Ollama model',
             ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
@@ -41,14 +41,14 @@ with st.sidebar:
     WORD_LIMIT_MIN, WORD_LIMIT_MAX = st.slider(
         'Select word limit range',
         min_value=100,
-        max_value=1000,
-        value=(200, 400),
+        max_value=500,
+        value=(200, 300),
         step=10,
         key='word_limit_range'
     )
 
 # Azure OpenAI setup (only if Cloud is selected)
-if model_type == 'Cloud (Azure)':
+if model_type == 'Cloud':
     os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     client = AzureOpenAI(
         azure_endpoint=st.secrets["AZURE_ENDPOINT"],
@@ -196,7 +196,7 @@ if feed_type == 'Generate from URL':
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
-            if model_type == 'Local (Ollama)':
+            if model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
                 comment = generate_azure_comment(article_content)
@@ -211,7 +211,7 @@ elif feed_type == 'Manual Input':
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
-            if model_type == 'Local (Ollama)':
+            if model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
                 comment = generate_azure_comment(article_content)
@@ -241,7 +241,7 @@ else:
         if headlines:
             for title, link in headlines[:5]:  # Display top 5 headlines
                 st.subheader(title)
-                if model_type == 'Local (Ollama)':
+                if model_type == 'Local':
                     comment = generate_comment(title)
                 else:
                     comment = generate_azure_comment(title)
@@ -290,7 +290,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
 {improvement_prompt}
 """
         try:
-            if model_type == 'Local (Ollama)':
+            if model_type == 'Local':
                 response = ollama.chat(
                     model=ollama_model,
                     messages=[{'role': 'user', 'content': improve_prompt}],
