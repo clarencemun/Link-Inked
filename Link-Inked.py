@@ -37,7 +37,7 @@ WORD_LIMIT_MAX = st.slider(
     'Select maximum word limit',
     min_value=100,
     max_value=500,
-    value=300,
+    value=200,
     step=10
 )
 
