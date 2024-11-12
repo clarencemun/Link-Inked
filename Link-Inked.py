@@ -33,18 +33,8 @@ with st.sidebar:
         ollama_model = st.selectbox(
             'Select your Ollama model',
             ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
-            index=3,  # Default to 'qwen2'
+            index=6,  # Default to 'gemma2'
             key='ollama_model'
-        )
-
-    # Define min and max word limit for the comments using a range slider
-    WORD_LIMIT_MIN, WORD_LIMIT_MAX = st.slider(
-        'Select word limit range',
-        min_value=100,
-        max_value=500,
-        value=(150, 200),
-        step=10,
-        key='word_limit_range'
     )
 
 # Azure OpenAI setup (only if Cloud is selected)
@@ -63,7 +53,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. Talk about the underlying technologies and implications where applicable. The comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. Talk about the underlying technologies and implications where applicable. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
 
 #########
 
@@ -264,7 +254,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be between {WORD_LIMIT_MIN} and {WORD_LIMIT_MAX} words and include the original summary of the article, enhanced with the given instructions.
+Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be between 150 and 200 words and include the original summary of the article, enhanced with the given instructions.
 
 #########
 
