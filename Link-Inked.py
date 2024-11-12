@@ -9,6 +9,7 @@ import streamlit.components.v1 as components
 import requests
 from bs4 import BeautifulSoup
 from openai import AzureOpenAI
+import re
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -193,6 +194,7 @@ if feed_type == 'Generate from URL':
             unique_id = str(uuid.uuid4())
             st.subheader("Generated Comment:")
             st.write(comment)
+            st.write(f"Read more here: {article_url}")
             copy_button(comment, unique_id, link=article_url)
 elif feed_type == 'Manual Input':
     st.header('Generate LinkedIn Comment Manually')
@@ -208,6 +210,8 @@ elif feed_type == 'Manual Input':
             unique_id = str(uuid.uuid4())
             st.subheader("Generated Comment:")
             st.write(comment)
+            if article_url.strip():
+                st.write(f"Read more here: {article_url}")
             copy_button(comment, unique_id, link=article_url)
         else:
             st.write("Please paste the article content to generate a comment.")
@@ -247,6 +251,10 @@ existing_comment = st.text_area("Paste the existing comment here:", key='existin
 improvement_prompt = st.text_area("Enter instructions for improving the comment:", key='improvement_prompt')
 if st.button('Improve Comment', key='improve_button'):
     if existing_comment.strip() and improvement_prompt.strip():
+        # Extract URL from existing comment if present
+        url_match = re.search(r'(https?://\S+)', existing_comment)
+        extracted_url = url_match.group(0) if url_match else None
+
         improve_prompt = f"""
 # CONTEXT #
 A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided.
@@ -301,7 +309,24 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
             unique_id = str(uuid.uuid4())
             st.subheader("Improved Comment:")
             st.write(improved_comment)
-            copy_button(improved_comment, unique_id)
+            if extracted_url:
+                st.write(f"Read more here: {extracted_url}")
+            # Create a copy button for the improved comment and URL
+            full_text_to_copy = f"Improved Comment:\n{improved_comment}\n\nRead more here: {extracted_url if extracted_url else 'N/A'}"
+            html_content = f"""
+                <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
+{full_text_to_copy}
+                </textarea>
+                <button onclick="copyToClipboard('{unique_id}')">Copy</button>
+                <script>
+                function copyToClipboard(unique_id) {{
+                    const copyText = document.getElementById('textarea-' + unique_id);
+                    const textToCopy = copyText.value.trim();
+                    navigator.clipboard.writeText(textToCopy);
+                }}
+                </script>
+            """
+            components.html(html_content, height=30)
         except Exception as e:
             st.error(f"An error occurred while improving the comment: {e}")
     else:
