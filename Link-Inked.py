@@ -141,7 +141,7 @@ def generate_rss_url(feed_type, search_terms='', topic='', location='', time_fra
     return base_url
 
 def copy_button(comment, unique_id, link=None):
-    additional_text = f"\n\nRead more here: {link}" if link else ""
+    additional_text = f"\n\n\nRead more here:\n\n{link}" if link else ""
     full_text_to_copy = comment + additional_text
     html_content = f"""
         <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
@@ -194,7 +194,7 @@ if feed_type == 'Generate from URL':
             unique_id = str(uuid.uuid4())
             st.subheader("Generated Comment:")
             st.write(comment)
-            st.write(f"Read more here: {article_url}")
+            st.write(f"\nRead more here:\n\n{article_url}")
             copy_button(comment, unique_id, link=article_url)
 elif feed_type == 'Manual Input':
     st.header('Generate LinkedIn Comment Manually')
@@ -211,7 +211,7 @@ elif feed_type == 'Manual Input':
             st.subheader("Generated Comment:")
             st.write(comment)
             if article_url.strip():
-                st.write(f"Read more here: {article_url}")
+                st.write(f"\nRead more here:\n\n{article_url}")
             copy_button(comment, unique_id, link=article_url)
         else:
             st.write("Please paste the article content to generate a comment.")
@@ -241,7 +241,7 @@ else:
                     comment = generate_azure_comment(title)
                 unique_id = str(uuid.uuid4())
                 st.write(comment)
-                st.write(f"Read more here: {link}")
+                st.write(f"\nRead more here:\n\n{link}")
                 copy_button(comment, unique_id, link=link)
                 st.write('---')
 
@@ -310,9 +310,9 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
             st.subheader("Improved Comment:")
             st.write(improved_comment)
             if extracted_url:
-                st.write(f"Read more here: {extracted_url}")
+                st.write(f"\nRead more here: \n\n{extracted_url}")
             # Create a copy button for the improved comment and URL
-            full_text_to_copy = f"Improved Comment:\n{improved_comment}\n\nRead more here: {extracted_url if extracted_url else 'N/A'}"
+            full_text_to_copy = f"Improved Comment:\n{improved_comment}\n\n\nRead more here:\n\n{extracted_url if extracted_url else 'N/A'}"
             html_content = f"""
                 <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
 {full_text_to_copy}
