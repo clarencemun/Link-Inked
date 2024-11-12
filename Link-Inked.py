@@ -34,7 +34,7 @@ with st.sidebar:
         ollama_model = st.selectbox(
             'Select your Ollama model',
             ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
-            index=6,  # Default to 'gemma2'
+            index=2,
             key='ollama_model'
     )
 
@@ -179,7 +179,7 @@ def extract_article_content(url):
         return ""
 
 # Streamlit UI setup
-feed_type = st.selectbox('Select News Type', ['Top Headlines', 'By Topic', 'By Country', 'By Search Terms', 'Manual Input', 'Generate from URL'], index=0, key='feed_type')
+feed_type = st.selectbox('Select News Type', ['By Search Terms', 'Generate from URL', 'Manual Input', 'Top Headlines', 'By Topic', 'By Country'], index=0, key='feed_type')
 
 # Conditional input fields based on feed type
 if feed_type == 'Generate from URL':
