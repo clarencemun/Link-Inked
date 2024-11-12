@@ -49,17 +49,17 @@ if model_type == 'Cloud':
 
 costar_prompt = """
 # CONTEXT #
-A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article.
+A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic to provide a knowledgeable and insightful comment.
 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. Talk about the underlying technologies and implications where applicable. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the analyst's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
 
 #########
 
 # STYLE #
-The comment should be engaging, succinct yet detailed, professional, and insightful. Provide a deeper demonstration of your domain knowledge.
+The comment should be engaging, succinct yet detailed, professional, and insightful. Provide a deeper demonstration of your domain knowledge, whether in technology or another field.
 
 #########
 
@@ -257,7 +257,7 @@ if st.button('Improve Comment', key='improve_button'):
 
         improve_prompt = f"""
 # CONTEXT #
-A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided.
+A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic.
 
 #########
 
@@ -267,7 +267,7 @@ Improve the existing LinkedIn comment while maintaining its reserved, profession
 #########
 
 # STYLE #
-The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of domain knowledge.
+The comment should be engaging, succinct, professional, and insightful. Provide a more nuanced demonstration of domain knowledge in that field.
 
 #########
 
