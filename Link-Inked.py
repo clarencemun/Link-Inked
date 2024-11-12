@@ -113,7 +113,7 @@ def generate_azure_comment(article_content):
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
             messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.9  # Increased temperature for more creative and varied responses
+            temperature=0.7  # Increase temperature for more creative and varied responses
         )
         response_text = response.choices[0].message.content
         return response_text.strip()
@@ -303,7 +303,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
                     messages=[{'role': 'user', 'content': improve_prompt}],
-                    temperature=0.9
+                    temperature=0.7
                 )
                 improved_comment = response.choices[0].message.content.strip()
             unique_id = str(uuid.uuid4())
