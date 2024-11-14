@@ -113,7 +113,7 @@ def generate_comment(article_content):
 def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
-        response = client.chat_completions.create(
+        response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7  # Increase temperature for more creative and varied responses
