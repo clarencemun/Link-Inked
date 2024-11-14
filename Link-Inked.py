@@ -13,8 +13,8 @@ import re
 
 # Initialize the OpenAI client
 client = openai.OpenAI()
-if "openai_api_key" in st.secrets:
-    os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
+if "OPENAI_API_KEY" in st.secrets:
+    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 else:
     st.error("OpenAI API key not found in Streamlit secrets. Please make sure it is properly set.")
 
@@ -47,7 +47,7 @@ with st.sidebar:
 
 # Azure OpenAI setup (only if Cloud is selected)
 if model_type == 'Cloud':
-    os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
+    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
     client = openai.OpenAI()
 
 costar_prompt = """
