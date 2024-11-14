@@ -8,7 +8,7 @@ import uuid
 import streamlit.components.v1 as components
 import requests
 from bs4 import BeautifulSoup
-from openai import AzureOpenAI
+import openai
 import re
 
 # Set base directory
@@ -40,12 +40,8 @@ with st.sidebar:
 
 # Azure OpenAI setup (only if Cloud is selected)
 if model_type == 'Cloud':
-    os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
-    client = AzureOpenAI(
-        azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=st.secrets["AZURE_API_VERSION"]
-    )
+    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+    client = OpenAI()
 
 costar_prompt = """
 # CONTEXT #
@@ -111,7 +107,7 @@ def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
         response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
+            model="gpt-4o",
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7  # Increase temperature for more creative and varied responses
         )
@@ -301,7 +297,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 improved_comment = improved_comment.strip()
             else:
                 response = client.chat.completions.create(
-                    model="gpt-4-0125-preview",
+                    model="gpt-4o",
                     messages=[{'role': 'user', 'content': improve_prompt}],
                     temperature=0.7
                 )
