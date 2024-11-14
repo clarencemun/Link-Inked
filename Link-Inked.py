@@ -114,7 +114,7 @@ def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini-2024-07-18",
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7  # Increase temperature for more creative and varied responses
         )
@@ -303,8 +303,8 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                         improved_comment += chunk['message']['content']
                 improved_comment = improved_comment.strip()
             else:
-                response = client.chat_completions.create(
-                    model="gpt-4o",
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini-2024-07-18",
                     messages=[{'role': 'user', 'content': improve_prompt}],
                     temperature=0.7
                 )
