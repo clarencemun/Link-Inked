@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 import openai
 import re
 
+client = OpenAI()
+
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -41,7 +43,6 @@ with st.sidebar:
 # Azure OpenAI setup (only if Cloud is selected)
 if model_type == 'Cloud':
     os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-    client = OpenAI()
 
 costar_prompt = """
 # CONTEXT #
