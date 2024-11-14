@@ -43,6 +43,7 @@ with st.sidebar:
 # Azure OpenAI setup (only if Cloud is selected)
 if model_type == 'Cloud':
     os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+    client = OpenAI()
 
 costar_prompt = """
 # CONTEXT #
