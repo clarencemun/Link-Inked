@@ -11,12 +11,6 @@ from bs4 import BeautifulSoup
 import openai
 import re
 
-# Initialize the OpenAI client
-client = openai.OpenAI()
-if "OPENAI_API_KEY" in st.secrets:
-    os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-else:
-    st.error("OpenAI API key not found in Streamlit secrets. Please make sure it is properly set.")
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
