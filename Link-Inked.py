@@ -27,7 +27,7 @@ else:
 with st.sidebar:
     st.header("Settings")
     # Select Local or Cloud for the model
-    model_type = st.radio("Select Model Type", ('Local', 'Cloud'), key='model_type')
+    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
     
     # Select your Ollama model if Local is chosen
     if model_type == 'Local':
