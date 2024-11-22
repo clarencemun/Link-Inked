@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 import openai
 import re
 
-
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -34,8 +33,8 @@ with st.sidebar:
     if model_type == 'Local':
         ollama_model = st.selectbox(
             'Select your Ollama model',
-            ['granite3-dense:8b', 'llama3.1', 'llama3.2:3b', 'qwen2', 'qwen2.5:14b', 'mistral', 'gemma2'],
-            index=2,
+            ['gemma2', 'gemma2:27b', 'llama3.1', 'llama3.1:70b', 'llama3.2:3b', 'mistral', 'qwen2', 'qwen2:72b', 'qwen2.5:14b', 'qwen2.5:32b'],
+            index=9,
             key='ollama_model'
     )
 
@@ -259,7 +258,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be between 150 and 200 words and include the original summary of the article, enhanced with the given instructions.
+Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be enhanced with the given instructions.
 
 #########
 
