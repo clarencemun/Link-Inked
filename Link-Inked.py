@@ -95,7 +95,8 @@ def generate_comment(article_content):
         response = ollama.chat(
             model=ollama_model,
             messages=conversation_history,
-            stream=True
+            stream=True,
+            format='json'
         )
         response_text = ""
         for chunk in response:
@@ -293,7 +294,8 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response = ollama.chat(
                     model=ollama_model,
                     messages=[{'role': 'user', 'content': improve_prompt}],
-                    stream=True
+                    stream=True,
+                    format='json'
                 )
                 improved_comment = ""
                 for chunk in response:
