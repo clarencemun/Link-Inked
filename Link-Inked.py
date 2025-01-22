@@ -34,7 +34,7 @@ with st.sidebar:
     if model_type == 'Local':
         ollama_model = st.selectbox(
             'Select your Ollama model',
-            ['gemma2', 'gemma2:27b', 'llama3.1', 'llama3.2:3b', 'mistral', 'qwen2', 'qwen2.5:14b', 'qwen2.5:32b', 'deepseek-llm:67b'],
+            ['gemma2', 'gemma2:27b', 'llama3.1', 'llama3.2:3b', 'mistral', 'qwen2', 'qwen2.5:14b', 'qwen2.5:32b', 'deepseek-llm:67b', 'deepseek-r1:32b'],
             index=7,
             key='ollama_model'
     )
