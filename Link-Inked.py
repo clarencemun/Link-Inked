@@ -28,25 +28,25 @@ else:
 with st.sidebar:
     st.header("Settings")
     # Select Local or Cloud for the model
-    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
+    model_type = st.radio("Select Model Type", ('Local', 'Cloud'), key='model_type')
     
     # Select your Ollama model if Local is chosen
     if model_type == 'Local':
         ollama_model = st.selectbox(
             'Select your Ollama model',
-            ['gemma2', 'gemma2:27b', 'llama3.1', 'llama3.2:3b', 'mistral', 'qwen2', 'qwen2.5:14b', 'qwen2.5:32b', 'deepseek-llm:67b', 'deepseek-r1:32b'],
-            index=7,
+            ['gemma2', 'gemma2:27b', 'llama3.1', 'llama3.2:3b', 'llama3.3:70b', 'mistral', 'qwen2', 'qwen2.5:14b', 'qwen2.5:32b', 'deepseek-llm:67b', 'deepseek-r1:32b'],
+            index=8,
             key='ollama_model'
-    )
+        )
 
 # Azure OpenAI setup (only if Cloud is selected)
 if model_type == 'Cloud':
     os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     client = AzureOpenAI(
-    azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
-    api_version=st.secrets["AZURE_API_VERSION"]
-)
+        azure_endpoint=st.secrets["AZURE_ENDPOINT"],
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
+        api_version=st.secrets["AZURE_API_VERSION"]
+    )
 
 costar_prompt = """
 # CONTEXT #
@@ -82,8 +82,14 @@ Print only the LinkedIn comment and nothing but the LinkedIn comment in text for
 # START ANALYSIS #
 """
 
-# Function to generate comments for LinkedIn using Ollama
+# Helper function to remove <think> tags
+def remove_think_tags(text):
+    """
+    Removes content enclosed in <think> tags from the text.
+    """
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
+# Function to generate comments for LinkedIn using Ollama
 def generate_comment(article_content):
     prompt = f"{costar_prompt}\n{article_content}"
 
@@ -101,13 +107,15 @@ def generate_comment(article_content):
         for chunk in response:
             if 'message' in chunk and 'content' in chunk['message']:
                 response_text += chunk['message']['content']
-        return response_text.strip()
+        
+        # Remove <think> tags before returning the comment
+        cleaned_response = remove_think_tags(response_text)
+        return cleaned_response
     except Exception as e:
         st.error(f"An error occurred: {e}")
         return ""
 
 # Function to generate comments using Azure OpenAI
-
 def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
@@ -117,13 +125,15 @@ def generate_azure_comment(article_content):
             temperature=0.7  # Increase temperature for more creative and varied responses
         )
         response_text = response.choices[0].message.content
-        return response_text.strip()
+        
+        # Remove <think> tags before returning the comment
+        cleaned_response = remove_think_tags(response_text)
+        return cleaned_response
     except Exception as e:
         st.error(f"An error occurred: {e}")
         return ""
 
 # Other utility functions
-
 def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
     return [(entry.title, entry.link) for entry in feed.entries]
@@ -299,14 +309,14 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 for chunk in response:
                     if 'message' in chunk and 'content' in chunk['message']:
                         improved_comment += chunk['message']['content']
-                improved_comment = improved_comment.strip()
+                improved_comment = remove_think_tags(improved_comment.strip())  # Remove <think> tags
             else:
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
                     messages=[{'role': 'user', 'content': improve_prompt}],
                     temperature=0.7
                 )
-                improved_comment = response.choices[0].message.content.strip()
+                improved_comment = remove_think_tags(response.choices[0].message.content.strip())  # Remove <think> tags
             unique_id = str(uuid.uuid4())
             st.subheader("Improved Comment:")
             st.write(improved_comment)
