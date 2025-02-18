@@ -238,7 +238,7 @@ else:
 
     topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0, key='topic') if feed_type == 'By Topic' else ''
     location = st.text_input('Enter Location', 'Singapore', key='location') if feed_type == 'By Country' else ''
-    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d', key='time_frame') if feed_type == 'By Search Terms' else ''
+    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '7d', key='time_frame') if feed_type == 'By Search Terms' else ''
 
     if st.button('Generate', key='generate_headlines_button'):
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
@@ -323,7 +323,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
             if extracted_url:
                 st.write(f"\nRead more here: \n{extracted_url}")
             # Create a copy button for the improved comment and URL
-            full_text_to_copy = f"Improved Comment:\n{improved_comment}\n\n\nRead more here:\n{extracted_url if extracted_url else 'N/A'}"
+            full_text_to_copy = f"{improved_comment}\n\n\nRead more here:\n{extracted_url if extracted_url else 'N/A'}"
             html_content = f"""
                 <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
 {full_text_to_copy}
