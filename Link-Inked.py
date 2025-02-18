@@ -138,7 +138,7 @@ def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
     return [(entry.title, entry.link) for entry in feed.entries]
 
-def generate_rss_url(feed_type, search_terms='', topic='', location='', time_frame='1d', language='en-SG', country='SG'):
+def generate_rss_url(feed_type, search_terms='', topic='', location='', time_frame='7d', language='en-SG', country='SG'):
     base_url = "https://news.google.com/rss"
     if feed_type == 'Top Headlines':
         return f"{base_url}?hl={language}&gl={country}&ceid={country}:{language}"
