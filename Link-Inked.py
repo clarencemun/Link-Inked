@@ -12,6 +12,11 @@ import openai
 from openai import AzureOpenAI
 import re
 import google.generativeai as genai
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import SystemMessage, UserMessage
+from azure.core.credentials import AzureKeyCredential
+import json
+import logging
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -53,6 +58,39 @@ def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
         st.error(f"An error occurred with Gemini: {e}")
         return ""
 
+# DeepSeek function to interact with the API
+def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
+    """
+    Calls the Azure Chat Completions API to generate a response.
+    """
+    endpoint = os.getenv("AZURE_INFERENCE_SDK_ENDPOINT")
+    key = os.getenv("AZURE_INFERENCE_SDK_KEY")
+
+    client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
+
+    # Adjust the system prompt to request a structured response
+    system_prompt = (
+        "You are an AI assistant that generates insightful LinkedIn comments. "
+        "You MUST respond with a detailed and professional comment. "
+        "Do not include any other text or explanations."
+    )
+
+    messages = [
+        SystemMessage(content=system_prompt),
+        UserMessage(content=user_prompt)
+    ]
+
+    response = client.complete(
+        messages=messages,
+        model=model_name,
+        max_tokens=500
+    )
+
+    response_text = response.choices[0].message.content
+    # Remove <think> tags before returning the comment
+    response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
+    return response_text
+
 # Create a settings sidebar for model selection and word limit settings
 with st.sidebar:
     st.header("Settings")
@@ -71,12 +109,12 @@ with st.sidebar:
         # Select Cloud model type
         cloud_model = st.selectbox(
             'Select Cloud Model',
-            ('GPT-4o', 'Gemini'),
+            ('Azure OpenAI', 'Gemini', 'DeepSeek'),
             key='cloud_model'
         )
 
-# GPT-4o setup (only if Cloud is selected and GPT-4o is chosen)
-if model_type == 'Cloud' and cloud_model == 'GPT-4o':
+# Azure OpenAI setup (only if Cloud is selected and Azure OpenAI is chosen)
+if model_type == 'Cloud' and cloud_model == 'Azure OpenAI':
     os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     client = AzureOpenAI(
         azure_endpoint=st.secrets["AZURE_ENDPOINT"],
@@ -91,7 +129,7 @@ A business analyst and Gen AI consultant with a strong interest and knowledge in
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks or bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical or societal perspectives that add value to the discussion. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
 
 #########
 
@@ -151,7 +189,7 @@ def generate_comment(article_content):
         st.error(f"An error occurred: {e}")
         return ""
 
-# Function to generate comments using GPT-4o
+# Function to generate comments using Azure OpenAI
 def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
@@ -236,6 +274,8 @@ if feed_type == 'Generate from URL':
         if article_content:
             if model_type == 'Cloud' and cloud_model == 'Gemini':
                 comment = generate_gemini_comment(article_content)
+            elif model_type == 'Cloud' and cloud_model == 'DeepSeek':
+                comment = generate_deepseek_comment(article_content)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
@@ -254,6 +294,8 @@ elif feed_type == 'Manual Input':
         if article_content.strip():
             if model_type == 'Cloud' and cloud_model == 'Gemini':
                 comment = generate_gemini_comment(article_content)
+            elif model_type == 'Cloud' and cloud_model == 'DeepSeek':
+                comment = generate_deepseek_comment(article_content)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
@@ -288,6 +330,8 @@ else:
                 st.subheader(title)
                 if model_type == 'Cloud' and cloud_model == 'Gemini':
                     comment = generate_gemini_comment(title)
+                elif model_type == 'Cloud' and cloud_model == 'DeepSeek':
+                    comment = generate_deepseek_comment(title)
                 elif model_type == 'Local':
                     comment = generate_comment(title)
                 else:
@@ -343,6 +387,8 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
         try:
             if model_type == 'Cloud' and cloud_model == 'Gemini':
                 improved_comment = generate_gemini_comment(improve_prompt)
+            elif model_type == 'Cloud' and cloud_model == 'DeepSeek':
+                improved_comment = generate_deepseek_comment(improve_prompt)
             elif model_type == 'Local':
                 response = ollama.chat(
                     model=ollama_model,
