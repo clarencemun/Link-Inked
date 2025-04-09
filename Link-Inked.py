@@ -1,56 +1,44 @@
+import os
+import re
+import uuid
 import urllib.parse
 import streamlit as st
 import feedparser
-import ollama
-from PIL import Image
-import os
-import uuid
-import streamlit.components.v1 as components
 import requests
+from PIL import Image
 from bs4 import BeautifulSoup
-import openai
-from openai import AzureOpenAI
-import re
+import streamlit.components.v1 as components
 import google.generativeai as genai
+import ollama
+from openai import AzureOpenAI
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
-import json
-import logging
 
-# Set base directory
+# Set base directory and load banner image
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Load the banner image using a relative path
 image_path = os.path.join(BASE_DIR, "banner.png")
+
 if os.path.exists(image_path):
     image = Image.open(image_path)
-    # Display the banner image
     st.image(image, width=200)
 else:
     st.write("Banner image not found.")
 
-# Configure Gemini API key (replace with your actual API key or use an environment variable)
-GEMINI_KEY = os.getenv("GEMINI_KEY")  # Set your Gemini API key here
+# Configure API keys
+GEMINI_KEY = os.getenv("GEMINI_KEY")
 genai.configure(api_key=GEMINI_KEY)
-
 gemini_model_name = 'gemini-1.5-pro'
 
-# Gemini function to interact with the API
+# Gemini API interaction function
 def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
-    """
-    Sends a prompt to the Gemini API and returns the response.
-    """
     try:
-        # Initialize the GenerativeModel
         model = genai.GenerativeModel(model_name)
-
-        # Generate the response
         response = model.generate_content(
             user_prompt,
             generation_config=genai.types.GenerationConfig(
-                temperature=0.1,  # Adjust temperature for deterministic responses
-                max_output_tokens=500  # Limit response length
+                temperature=0.1,
+                max_output_tokens=500
             )
         )
         return response.text
@@ -58,17 +46,12 @@ def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
         st.error(f"An error occurred with Gemini: {e}")
         return ""
 
-# DeepSeek function to interact with the API
+# DeepSeek API interaction function
 def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
-    """
-    Calls the Azure Chat Completions API to generate a response.
-    """
     endpoint = os.getenv("AZURE_INFERENCE_SDK_ENDPOINT")
     key = os.getenv("AZURE_INFERENCE_SDK_KEY")
-
     client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
 
-    # Adjust the system prompt to request a structured response
     system_prompt = (
         "You are an AI assistant that generates insightful LinkedIn comments. "
         "You MUST respond with a detailed and professional comment. "
@@ -87,17 +70,13 @@ def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
     )
 
     response_text = response.choices[0].message.content
-    # Remove <think> tags before returning the comment
-    response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
-    return response_text
+    return re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
 
-# Create a settings sidebar for model selection and word limit settings
+# Streamlit sidebar for model selection
 with st.sidebar:
     st.header("Settings")
-    # Select Local or Cloud for the model
-    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
+    model_type = st.radio("Select Model Type", ('Local', 'Cloud'), key='model_type')
 
-    # Select your Ollama model if Local is chosen
     if model_type == 'Local':
         ollama_model = st.selectbox(
             'Select your Ollama model',
@@ -106,22 +85,22 @@ with st.sidebar:
             key='ollama_model'
         )
     else:
-        # Select Cloud model type
         cloud_model = st.selectbox(
             'Select Cloud Model',
             ('GPT-4o', 'Gemini 1.5 Pro', 'DeepSeek-R1'),
             key='cloud_model'
         )
 
-# GPT-4o setup (only if Cloud is selected and GPT-4o is chosen)
+# Azure OpenAI setup
 if model_type == 'Cloud' and cloud_model == 'GPT-4o':
     os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     client = AzureOpenAI(
         azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-        api_key=os.getenv("AZURE_OPENAI_API_KEY"),  # Ensure API key is stored securely in environment variables
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
         api_version=st.secrets["AZURE_API_VERSION"]
     )
 
+# Prompt for generating LinkedIn comments
 costar_prompt = """
 # CONTEXT #
 A business analyst and Gen AI consultant with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic to provide a knowledgeable and insightful comment.
@@ -158,18 +137,12 @@ Print only the LinkedIn comment and nothing but the LinkedIn comment in text for
 
 # Helper function to remove <think> tags
 def remove_think_tags(text):
-    """
-    Removes content enclosed in <think> tags from the text.
-    """
     return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
-# Function to generate comments for LinkedIn using Ollama
+# Function to generate comments using Ollama
 def generate_comment(article_content):
     prompt = f"{costar_prompt}\n{article_content}"
-
-    conversation_history = [
-        {'role': 'user', 'content': prompt}
-    ]
+    conversation_history = [{'role': 'user', 'content': prompt}]
 
     try:
         response = ollama.chat(
@@ -177,37 +150,27 @@ def generate_comment(article_content):
             messages=conversation_history,
             stream=True
         )
-        response_text = ""
-        for chunk in response:
-            if 'message' in chunk and 'content' in chunk['message']:
-                response_text += chunk['message']['content']
-
-        # Remove <think> tags before returning the comment
-        cleaned_response = remove_think_tags(response_text)
-        return cleaned_response
+        response_text = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
+        return remove_think_tags(response_text)
     except Exception as e:
         st.error(f"An error occurred: {e}")
         return ""
 
-# Function to generate comments using GPT-4o
+# Function to generate comments using Azure OpenAI
 def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
             messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.7  # Increase temperature for more creative and varied responses
+            temperature=0.7
         )
-        response_text = response.choices[0].message.content
-
-        # Remove <think> tags before returning the comment
-        cleaned_response = remove_think_tags(response_text)
-        return cleaned_response
+        return remove_think_tags(response.choices[0].message.content)
     except Exception as e:
         st.error(f"An error occurred: {e}")
         return ""
 
-# Other utility functions
+# Utility functions for RSS feeds and article extraction
 def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
     return [(entry.title, entry.link) for entry in feed.entries]
@@ -248,14 +211,11 @@ def extract_article_content(url):
         response = requests.get(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            # Extract the title and main content paragraphs
             title = soup.find('h1')
             title_text = title.get_text().strip() if title else ""
             paragraphs = soup.find_all('p')
             article_content = ' '.join([p.get_text() for p in paragraphs])
-            # Combine title and content for better context
-            full_content = f"{title_text}. {article_content.strip()}"
-            return full_content.strip()
+            return f"{title_text}. {article_content.strip()}".strip()
         else:
             st.error(f"Failed to fetch the article. Status code: {response.status_code}")
             return ""
@@ -287,7 +247,6 @@ if feed_type == 'Generate from URL':
             copy_button(comment, unique_id, link=article_url)
 elif feed_type == 'Manual Input':
     st.header('Generate LinkedIn Comment Manually')
-    # Manual input mode to provide article content manually
     article_content = st.text_area("Paste the article content here:", key='manual_article_content')
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
@@ -309,9 +268,8 @@ elif feed_type == 'Manual Input':
         else:
             st.write("Please paste the article content to generate a comment.")
 else:
-    # RSS feed types
     search_terms = []
-    default_terms = ['Artificial Intelligence', 'AI', 'Data Science', 'Business', 'Data Analytics', 'Machine Learning', 'LLM', 'NLP', '', '']  # Default search terms
+    default_terms = ['Artificial Intelligence', 'AI', 'Data Science', 'Business', 'Data Analytics', 'Machine Learning', 'LLM', 'NLP', '', '']
     if feed_type == 'By Search Terms':
         st.write("Enter up to ten search terms:")
         for i in range(10):
@@ -326,7 +284,7 @@ else:
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
-            for title, link in headlines[:5]:  # Display top 5 headlines
+            for title, link in headlines[:5]:
                 st.subheader(title)
                 if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
                     comment = generate_gemini_comment(title)
@@ -348,7 +306,6 @@ existing_comment = st.text_area("Paste the existing comment here:", key='existin
 improvement_prompt = st.text_area("Enter instructions for improving the comment:", key='improvement_prompt')
 if st.button('Improve Comment', key='improve_button'):
     if existing_comment.strip() and improvement_prompt.strip():
-        # Extract URL from existing comment if present
         url_match = re.search(r'(https?://\S+)', existing_comment)
         extracted_url = url_match.group(0) if url_match else None
 
@@ -395,24 +352,20 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                     messages=[{'role': 'user', 'content': improve_prompt}],
                     stream=True
                 )
-                improved_comment = ""
-                for chunk in response:
-                    if 'message' in chunk and 'content' in chunk['message']:
-                        improved_comment += chunk['message']['content']
-                improved_comment = remove_think_tags(improved_comment.strip())  # Remove <think> tags
+                improved_comment = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
+                improved_comment = remove_think_tags(improved_comment.strip())
             else:
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
                     messages=[{'role': 'user', 'content': improve_prompt}],
                     temperature=0.7
                 )
-                improved_comment = remove_think_tags(response.choices[0].message.content.strip())  # Remove <think> tags
+                improved_comment = remove_think_tags(response.choices[0].message.content.strip())
             unique_id = str(uuid.uuid4())
             st.subheader("Improved Comment:")
             st.write(improved_comment)
             if extracted_url:
                 st.write(f"\nRead more here: \n{extracted_url}")
-            # Create a copy button for the improved comment and URL
             full_text_to_copy = f"{improved_comment}\n\n\nRead more here:\n{extracted_url if extracted_url else 'N/A'}"
             html_content = f"""
                 <textarea id='textarea-{unique_id}' style='opacity: 0; position: absolute; z-index: -1; left: -9999px;'>
