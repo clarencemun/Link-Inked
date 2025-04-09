@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import openai
 from openai import AzureOpenAI
 import re
+import google.generativeai as genai
 
 # Set base directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,12 +25,40 @@ if os.path.exists(image_path):
 else:
     st.write("Banner image not found.")
 
+# Configure Gemini API key (replace with your actual API key or use an environment variable)
+GEMINI_KEY = os.getenv("GEMINI_KEY")  # Set your Gemini API key here
+genai.configure(api_key=GEMINI_KEY)
+
+gemini_model_name = 'gemini-1.5-pro'
+
+# Gemini function to interact with the API
+def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
+    """
+    Sends a prompt to the Gemini API and returns the response.
+    """
+    try:
+        # Initialize the GenerativeModel
+        model = genai.GenerativeModel(model_name)
+
+        # Generate the response
+        response = model.generate_content(
+            user_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.1,  # Adjust temperature for deterministic responses
+                max_output_tokens=500  # Limit response length
+            )
+        )
+        return response.text
+    except Exception as e:
+        st.error(f"An error occurred with Gemini: {e}")
+        return ""
+
 # Create a settings sidebar for model selection and word limit settings
 with st.sidebar:
     st.header("Settings")
-    # Select Local or Cloud for the model
-    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
-    
+    # Select Local, Cloud, or Gemini for the model
+    model_type = st.radio("Select Model Type", ('Cloud', 'Local', 'Gemini'), key='model_type')
+
     # Select your Ollama model if Local is chosen
     if model_type == 'Local':
         ollama_model = st.selectbox(
@@ -107,7 +136,7 @@ def generate_comment(article_content):
         for chunk in response:
             if 'message' in chunk and 'content' in chunk['message']:
                 response_text += chunk['message']['content']
-        
+
         # Remove <think> tags before returning the comment
         cleaned_response = remove_think_tags(response_text)
         return cleaned_response
@@ -125,7 +154,7 @@ def generate_azure_comment(article_content):
             temperature=0.7  # Increase temperature for more creative and varied responses
         )
         response_text = response.choices[0].message.content
-        
+
         # Remove <think> tags before returning the comment
         cleaned_response = remove_think_tags(response_text)
         return cleaned_response
@@ -198,7 +227,9 @@ if feed_type == 'Generate from URL':
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
-            if model_type == 'Local':
+            if model_type == 'Gemini':
+                comment = generate_gemini_comment(article_content)
+            elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
                 comment = generate_azure_comment(article_content)
@@ -214,7 +245,9 @@ elif feed_type == 'Manual Input':
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
-            if model_type == 'Local':
+            if model_type == 'Gemini':
+                comment = generate_gemini_comment(article_content)
+            elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
                 comment = generate_azure_comment(article_content)
@@ -246,7 +279,9 @@ else:
         if headlines:
             for title, link in headlines[:5]:  # Display top 5 headlines
                 st.subheader(title)
-                if model_type == 'Local':
+                if model_type == 'Gemini':
+                    comment = generate_gemini_comment(title)
+                elif model_type == 'Local':
                     comment = generate_comment(title)
                 else:
                     comment = generate_azure_comment(title)
@@ -299,7 +334,9 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
 {improvement_prompt}
 """
         try:
-            if model_type == 'Local':
+            if model_type == 'Gemini':
+                improved_comment = generate_gemini_comment(improve_prompt)
+            elif model_type == 'Local':
                 response = ollama.chat(
                     model=ollama_model,
                     messages=[{'role': 'user', 'content': improve_prompt}],
