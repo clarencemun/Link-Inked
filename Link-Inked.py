@@ -56,8 +56,8 @@ def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
 # Create a settings sidebar for model selection and word limit settings
 with st.sidebar:
     st.header("Settings")
-    # Select Local, Cloud, or Gemini for the model
-    model_type = st.radio("Select Model Type", ('Cloud', 'Local', 'Gemini'), key='model_type')
+    # Select Local or Cloud for the model
+    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
 
     # Select your Ollama model if Local is chosen
     if model_type == 'Local':
@@ -67,9 +67,16 @@ with st.sidebar:
             index=6,
             key='ollama_model'
         )
+    else:
+        # Select Cloud model type
+        cloud_model = st.selectbox(
+            'Select Cloud Model',
+            ('Azure OpenAI', 'Gemini'),
+            key='cloud_model'
+        )
 
-# Azure OpenAI setup (only if Cloud is selected)
-if model_type == 'Cloud':
+# Azure OpenAI setup (only if Cloud is selected and Azure OpenAI is chosen)
+if model_type == 'Cloud' and cloud_model == 'Azure OpenAI':
     os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     client = AzureOpenAI(
         azure_endpoint=st.secrets["AZURE_ENDPOINT"],
@@ -84,7 +91,7 @@ A business analyst and Gen AI consultant with a strong interest and knowledge in
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philiosophical, ethical or societal perspectives that add value to the discussion. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical or societal perspectives that add value to the discussion. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
 
 #########
 
@@ -227,7 +234,7 @@ if feed_type == 'Generate from URL':
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
-            if model_type == 'Gemini':
+            if model_type == 'Cloud' and cloud_model == 'Gemini':
                 comment = generate_gemini_comment(article_content)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
@@ -245,7 +252,7 @@ elif feed_type == 'Manual Input':
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
-            if model_type == 'Gemini':
+            if model_type == 'Cloud' and cloud_model == 'Gemini':
                 comment = generate_gemini_comment(article_content)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
@@ -279,7 +286,7 @@ else:
         if headlines:
             for title, link in headlines[:5]:  # Display top 5 headlines
                 st.subheader(title)
-                if model_type == 'Gemini':
+                if model_type == 'Cloud' and cloud_model == 'Gemini':
                     comment = generate_gemini_comment(title)
                 elif model_type == 'Local':
                     comment = generate_comment(title)
@@ -334,7 +341,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
 {improvement_prompt}
 """
         try:
-            if model_type == 'Gemini':
+            if model_type == 'Cloud' and cloud_model == 'Gemini':
                 improved_comment = generate_gemini_comment(improve_prompt)
             elif model_type == 'Local':
                 response = ollama.chat(
