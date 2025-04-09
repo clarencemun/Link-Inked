@@ -29,7 +29,7 @@ else:
 GEMINI_KEY = os.getenv("GEMINI_KEY")  # Set your Gemini API key here
 genai.configure(api_key=GEMINI_KEY)
 
-gemini_model_name = 'gemini-2.0-pro'
+gemini_model_name = 'gemini-1.5-pro'
 
 # Gemini function to interact with the API
 def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
@@ -71,12 +71,12 @@ with st.sidebar:
         # Select Cloud model type
         cloud_model = st.selectbox(
             'Select Cloud Model',
-            ('Azure OpenAI', 'Gemini'),
+            ('GPT-4o', 'Gemini'),
             key='cloud_model'
         )
 
-# Azure OpenAI setup (only if Cloud is selected and Azure OpenAI is chosen)
-if model_type == 'Cloud' and cloud_model == 'Azure OpenAI':
+# GPT-4o setup (only if Cloud is selected and GPT-4o is chosen)
+if model_type == 'Cloud' and cloud_model == 'GPT-4o':
     os.environ["AZURE_OPENAI_API_KEY"] = st.secrets["AZURE_OPENAI_API_KEY"]
     client = AzureOpenAI(
         azure_endpoint=st.secrets["AZURE_ENDPOINT"],
@@ -151,7 +151,7 @@ def generate_comment(article_content):
         st.error(f"An error occurred: {e}")
         return ""
 
-# Function to generate comments using Azure OpenAI
+# Function to generate comments using GPT-4o
 def generate_azure_comment(article_content):
     prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
