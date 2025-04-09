@@ -6,3 +6,6 @@ requests
 beautifulsoup4
 ollama
 google-generativeai
+azure-ai-inference
+azure-core
+azure-identity
