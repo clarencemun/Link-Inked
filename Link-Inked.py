@@ -37,11 +37,11 @@ genai.configure(api_key=GEMINI_KEY)
 gemini_model_name = 'gemini-1.5-pro'
 
 # Gemini API interaction function
-def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
+def generate_gemini_comment(prompt, model_name=gemini_model_name):
     try:
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(
-            user_prompt,
+            prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=model_temperature,
                 max_output_tokens=model_max_tokens,
@@ -53,13 +53,13 @@ def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
         return ""
 
 # DeepSeek API interaction function
-def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
+def generate_deepseek_comment(prompt, model_name='DeepSeek-R1'):
     endpoint = os.getenv("AZURE_INFERENCE_SDK_ENDPOINT")
     key = os.getenv("AZURE_INFERENCE_SDK_KEY")
     client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
 
     messages = [
-        UserMessage(content=user_prompt)
+        UserMessage(content=prompt)
     ]
 
     response = client.complete(
@@ -233,10 +233,11 @@ if feed_type == 'Generate from URL':
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
+            prompt = f"{costar_prompt}\n{article_content}"
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                comment = generate_gemini_comment(article_content)
+                comment = generate_gemini_comment(prompt)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                comment = generate_deepseek_comment(article_content)
+                comment = generate_deepseek_comment(prompt)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
@@ -252,10 +253,11 @@ elif feed_type == 'Manual Input':
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
+            prompt = f"{costar_prompt}\n{article_content}"
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                comment = generate_gemini_comment(article_content)
+                comment = generate_gemini_comment(prompt)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                comment = generate_deepseek_comment(article_content)
+                comment = generate_deepseek_comment(prompt)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
@@ -288,10 +290,11 @@ else:
             for title, link in headlines[:5]:
                 article_content = extract_article_content(link)
                 if article_content:
+                    prompt = f"{costar_prompt}\n{article_content}"
                     if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                        comment = generate_gemini_comment(article_content)
+                        comment = generate_gemini_comment(prompt)
                     elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                        comment = generate_deepseek_comment(article_content)
+                        comment = generate_deepseek_comment(prompt)
                     elif model_type == 'Local':
                         comment = generate_comment(article_content)
                     else:
@@ -312,7 +315,7 @@ if st.button('Improve Comment', key='improve_button'):
         url_match = re.search(r'(https?://\S+)', existing_comment)
         extracted_url = url_match.group(0) if url_match else None
 
-        improve_prompt = f"""
+        prompt = f"""
 # CONTEXT #
 A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic.
 
@@ -346,13 +349,13 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
 """
         try:
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                improved_comment = generate_gemini_comment(improve_prompt)
+                improved_comment = generate_gemini_comment(prompt)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                improved_comment = generate_deepseek_comment(improve_prompt)
+                improved_comment = generate_deepseek_comment(prompt)
             elif model_type == 'Local':
                 response = ollama.chat(
                     model=ollama_model,
-                    messages=[{'role': 'user', 'content': improve_prompt}],
+                    messages=[{'role': 'user', 'content': prompt}],
                     stream=True
                 )
                 improved_comment = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
@@ -360,7 +363,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
             else:
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
-                    messages=[{'role': 'user', 'content': improve_prompt}],
+                    messages=[{'role': 'user', 'content': prompt}],
                     temperature=model_temperature,
                     max_tokens=model_max_tokens
                 )
