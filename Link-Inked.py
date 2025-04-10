@@ -224,6 +224,51 @@ def extract_article_content(url):
         st.error(f"An error occurred while extracting the article: {e}")
         return ""
 
+# Function to select top headlines
+def select_top_headlines(headlines):
+    headlines_text = "\n".join([f"{i+1}. {title}" for i, (title, _) in enumerate(headlines)])
+    prompt = f"""
+# CONTEXT #
+A business analyst and Gen AI consultant needs to select the top 5 headlines from a list that are most likely to attract views on LinkedIn.
+
+#########
+
+# OBJECTIVE #
+Select the top 5 headlines that are engaging, relevant, and likely to attract views and engagement on LinkedIn.
+
+#########
+
+# HEADLINES #
+{headlines_text}
+
+#########
+
+# RESPONSE #
+Print only the numbers of the selected headlines, separated by commas.
+"""
+    if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
+        selected_indices = generate_gemini_comment(prompt)
+    elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
+        selected_indices = generate_deepseek_comment(prompt)
+    elif model_type == 'Local':
+        response = ollama.chat(
+            model=ollama_model,
+            messages=[{'role': 'user', 'content': prompt}],
+            stream=True
+        )
+        selected_indices = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
+    else:
+        response = client.chat.completions.create(
+            model="gpt-4-0125-preview",
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=model_temperature,
+            max_tokens=model_max_tokens
+        )
+        selected_indices = response.choices[0].message.content.strip()
+
+    selected_indices = [int(index.strip()) - 1 for index in selected_indices.split(',')]
+    return [headlines[i] for i in selected_indices]
+
 # Streamlit UI setup
 feed_type = st.selectbox('Select News Type', ['By Search Terms', 'Generate from URL', 'Manual Input', 'Top Headlines', 'By Topic', 'By Country'], index=0, key='feed_type')
 
@@ -287,7 +332,8 @@ else:
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
-            for title, link in headlines[:5]:
+            selected_headlines = select_top_headlines(headlines)
+            for title, link in selected_headlines:
                 article_content = extract_article_content(link)
                 if article_content:
                     prompt = f"{costar_prompt}\n{article_content}"
