@@ -286,20 +286,22 @@ else:
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
             for title, link in headlines[:5]:
-                st.subheader(title)
-                if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                    comment = generate_gemini_comment(title)
-                elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                    comment = generate_deepseek_comment(title)
-                elif model_type == 'Local':
-                    comment = generate_comment(title)
-                else:
-                    comment = generate_azure_comment(title)
-                unique_id = str(uuid.uuid4())
-                st.write(comment)
-                st.write(f"\nRead more here:\n{link}")
-                copy_button(comment, unique_id, link=link)
-                st.write('---')
+                article_content = extract_article_content(link)
+                if article_content:
+                    if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
+                        comment = generate_gemini_comment(article_content)
+                    elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
+                        comment = generate_deepseek_comment(article_content)
+                    elif model_type == 'Local':
+                        comment = generate_comment(article_content)
+                    else:
+                        comment = generate_azure_comment(article_content)
+                    unique_id = str(uuid.uuid4())
+                    st.subheader(title)
+                    st.write(comment)
+                    st.write(f"\nRead more here:\n{link}")
+                    copy_button(comment, unique_id, link=link)
+                    st.write('---')
 
 # Streamlit UI setup for improving an existing comment
 st.header('Improve an Existing Comment')
