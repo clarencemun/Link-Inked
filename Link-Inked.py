@@ -158,7 +158,7 @@ def generate_comment(article_content):
 
 # Function to generate comments using Azure OpenAI
 def generate_azure_comment(article_content):
-    prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
+    prompt = f"{costar_prompt}\n{article_content}"
     try:
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
