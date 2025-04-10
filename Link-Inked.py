@@ -26,7 +26,7 @@ else:
     st.write("Banner image not found.")
 
 # Set model temperature
-model_temperature = 0.7
+model_temperature = 0.5
 
 # Set model max tokens
 model_max_tokens = 2000
