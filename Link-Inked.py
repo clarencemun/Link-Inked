@@ -224,6 +224,44 @@ def extract_article_content(url):
         st.error(f"An error occurred while extracting the article: {e}")
         return ""
 
+# Function to summarize article content
+def summarize_article_content(article_content):
+    summarize_prompt = f"""
+# CONTEXT #
+Summarize the following article content to focus on the key points and insights. The summary should be concise and retain the most important information.
+
+#########
+
+# ARTICLE CONTENT #
+{article_content}
+
+#########
+
+# RESPONSE #
+Print only the summary of the article content and nothing but the summary in text format.
+"""
+    if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
+        summary = generate_gemini_comment(summarize_prompt)
+    elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
+        summary = generate_deepseek_comment(summarize_prompt)
+    elif model_type == 'Local':
+        response = ollama.chat(
+            model=ollama_model,
+            messages=[{'role': 'user', 'content': summarize_prompt}],
+            stream=True
+        )
+        summary = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
+    else:
+        response = client.chat.completions.create(
+            model="gpt-4-0125-preview",
+            messages=[{'role': 'user', 'content': summarize_prompt}],
+            temperature=model_temperature,
+            max_tokens=model_max_tokens
+        )
+        summary = response.choices[0].message.content.strip()
+
+    return remove_think_tags(summary)
+
 # Function to select top headlines
 def select_top_headlines(headlines):
     headlines_text = "\n".join([f"{i+1}. {title}" for i, (title, _) in enumerate(headlines)])
@@ -278,15 +316,16 @@ if feed_type == 'Generate from URL':
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
-            prompt = f"{costar_prompt}\n{article_content}"
+            summarized_content = summarize_article_content(article_content)
+            prompt = f"{costar_prompt}\n{summarized_content}"
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
                 comment = generate_gemini_comment(prompt)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
                 comment = generate_deepseek_comment(prompt)
             elif model_type == 'Local':
-                comment = generate_comment(article_content)
+                comment = generate_comment(summarized_content)
             else:
-                comment = generate_azure_comment(article_content)
+                comment = generate_azure_comment(summarized_content)
             unique_id = str(uuid.uuid4())
             st.subheader("Generated Comment:")
             st.write(comment)
@@ -298,15 +337,16 @@ elif feed_type == 'Manual Input':
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
-            prompt = f"{costar_prompt}\n{article_content}"
+            summarized_content = summarize_article_content(article_content)
+            prompt = f"{costar_prompt}\n{summarized_content}"
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
                 comment = generate_gemini_comment(prompt)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
                 comment = generate_deepseek_comment(prompt)
             elif model_type == 'Local':
-                comment = generate_comment(article_content)
+                comment = generate_comment(summarized_content)
             else:
-                comment = generate_azure_comment(article_content)
+                comment = generate_azure_comment(summarized_content)
             unique_id = str(uuid.uuid4())
             st.subheader("Generated Comment:")
             st.write(comment)
@@ -336,15 +376,16 @@ else:
             for title, link in selected_headlines:
                 article_content = extract_article_content(link)
                 if article_content:
-                    prompt = f"{costar_prompt}\n{article_content}"
+                    summarized_content = summarize_article_content(article_content)
+                    prompt = f"{costar_prompt}\n{summarized_content}"
                     if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
                         comment = generate_gemini_comment(prompt)
                     elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
                         comment = generate_deepseek_comment(prompt)
                     elif model_type == 'Local':
-                        comment = generate_comment(article_content)
+                        comment = generate_comment(summarized_content)
                     else:
-                        comment = generate_azure_comment(article_content)
+                        comment = generate_azure_comment(summarized_content)
                     unique_id = str(uuid.uuid4())
                     st.subheader(title)
                     st.write(comment)
