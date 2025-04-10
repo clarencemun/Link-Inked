@@ -26,10 +26,10 @@ else:
     st.write("Banner image not found.")
 
 # Set model temperature
-model_temperature = 0.5
+model_temperature = 0.3
 
 # Set model max tokens
-model_max_tokens = 2000
+model_max_tokens = 4000
 
 # Configure API keys
 GEMINI_KEY = os.getenv("GEMINI_KEY")
