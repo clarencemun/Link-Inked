@@ -36,21 +36,12 @@ GEMINI_KEY = os.getenv("GEMINI_KEY")
 genai.configure(api_key=GEMINI_KEY)
 gemini_model_name = 'gemini-1.5-pro'
 
-# Define the system prompt
-system_prompt = (
-    "You are an AI assistant that generates insightful LinkedIn comments. "
-    "You MUST respond with a detailed and professional comment. "
-    "Do not include any other text or explanations. "
-    "Avoid the use of exclamation marks and bullet points. "
-    "Keep the comment under 150 words."
-)
-
 # Gemini API interaction function
 def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
     try:
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(
-            f"{system_prompt}\n\n{user_prompt}",
+            user_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=model_temperature,
                 max_output_tokens=model_max_tokens,
@@ -68,7 +59,6 @@ def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
     client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
 
     messages = [
-        SystemMessage(content=system_prompt),
         UserMessage(content=user_prompt)
     ]
 
@@ -151,7 +141,7 @@ def remove_think_tags(text):
 
 # Function to generate comments using Ollama
 def generate_comment(article_content):
-    prompt = f"{system_prompt}\n\n{costar_prompt}\n{article_content}"
+    prompt = f"{costar_prompt}\n{article_content}"
     conversation_history = [{'role': 'user', 'content': prompt}]
 
     try:
@@ -168,7 +158,7 @@ def generate_comment(article_content):
 
 # Function to generate comments using Azure OpenAI
 def generate_azure_comment(article_content):
-    prompt = f"{system_prompt}\n\n{costar_prompt}\n[ARTICLE]\n{article_content}\n"
+    prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
