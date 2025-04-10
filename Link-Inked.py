@@ -25,6 +25,12 @@ if os.path.exists(image_path):
 else:
     st.write("Banner image not found.")
 
+# Set model temperature
+model_temperature = 0.7
+
+# Set model max tokens
+model_max_tokens = 2000
+
 # Configure API keys
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 genai.configure(api_key=GEMINI_KEY)
@@ -37,8 +43,8 @@ def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
         response = model.generate_content(
             user_prompt,
             generation_config=genai.types.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=500
+                temperature=model_temperature,
+                max_output_tokens=model_max_tokens,
             )
         )
         return response.text
@@ -66,7 +72,8 @@ def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
     response = client.complete(
         messages=messages,
         model=model_name,
-        max_tokens=500
+        max_tokens=model_max_tokens,
+        temperature=model_temperature,
     )
 
     response_text = response.choices[0].message.content
@@ -163,7 +170,8 @@ def generate_azure_comment(article_content):
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
             messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.7
+            temperature=model_temperature,
+            max_tokens=model_max_tokens
         )
         return remove_think_tags(response.choices[0].message.content)
     except Exception as e:
@@ -358,7 +366,8 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
                     messages=[{'role': 'user', 'content': improve_prompt}],
-                    temperature=0.7
+                    temperature=model_temperature,
+                    max_tokens=model_max_tokens
                 )
                 improved_comment = remove_think_tags(response.choices[0].message.content.strip())
             unique_id = str(uuid.uuid4())
