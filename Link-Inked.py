@@ -29,7 +29,7 @@ else:
 model_temperature = 0.3
 
 # Set model max tokens
-model_max_tokens = 4000
+model_max_tokens = 2000
 
 # Configure API keys
 GEMINI_KEY = os.getenv("GEMINI_KEY")
@@ -115,7 +115,7 @@ A business analyst and Gen AI consultant with a strong interest and knowledge in
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks or bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion. The comment should be between 150 and 200 words and include a detailed summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks nor bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion. Keep the comment under 150 words and include a brief summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
 
 #########
 
@@ -324,7 +324,7 @@ A business analyst and Gen AI practitioner with a strong interest and knowledge 
 #########
 
 # OBJECTIVE #
-Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks. The improved comment should be enhanced with the given instructions.
+Improve the existing LinkedIn comment while maintaining its reserved, professional, and insightful tone. Avoid the use of exclamation marks nor bulletpoints and keep the comment under 150 words. The improved comment should be enhanced with the given instructions.
 
 #########
 
