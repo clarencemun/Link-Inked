@@ -37,11 +37,11 @@ genai.configure(api_key=GEMINI_KEY)
 gemini_model_name = 'gemini-1.5-pro'
 
 # Gemini API interaction function
-def generate_gemini_comment(prompt, model_name=gemini_model_name):
+def generate_gemini_comment(user_prompt, model_name=gemini_model_name):
     try:
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(
-            prompt,
+            user_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=model_temperature,
                 max_output_tokens=model_max_tokens,
@@ -53,13 +53,13 @@ def generate_gemini_comment(prompt, model_name=gemini_model_name):
         return ""
 
 # DeepSeek API interaction function
-def generate_deepseek_comment(prompt, model_name='DeepSeek-R1'):
+def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
     endpoint = os.getenv("AZURE_INFERENCE_SDK_ENDPOINT")
     key = os.getenv("AZURE_INFERENCE_SDK_KEY")
     client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(key))
 
     messages = [
-        UserMessage(content=prompt)
+        UserMessage(content=user_prompt)
     ]
 
     response = client.complete(
@@ -80,8 +80,8 @@ with st.sidebar:
     if model_type == 'Local':
         ollama_model = st.selectbox(
             'Select your Ollama model',
-            ['gemma3', 'gemma3:27b', 'llama3.2:3b', 'mistral', 'mistral-small:24b', 'qwen2.5:14b', 'qwen2.5:32b', 'r1-1776', 'deepseek-llm:67b', 'deepseek-r1:32b', 'deepseek-r1:70B'],
-            index=6,
+            ['gemma3', 'gemma3:27b', 'llama3.2:3b', 'llama3.3', 'mistral', 'mistral-small:24b', 'qwen2.5:14b', 'qwen2.5:32b', 'deepseek-llm:67b', 'deepseek-r1:32b'],
+            index=7,
             key='ollama_model'
         )
     else:
@@ -158,7 +158,7 @@ def generate_comment(article_content):
 
 # Function to generate comments using Azure OpenAI
 def generate_azure_comment(article_content):
-    prompt = f"{costar_prompt}\n{article_content}"
+    prompt = f"{costar_prompt}\n[ARTICLE]\n{article_content}\n"
     try:
         response = client.chat.completions.create(
             model="gpt-4-0125-preview",
@@ -224,51 +224,6 @@ def extract_article_content(url):
         st.error(f"An error occurred while extracting the article: {e}")
         return ""
 
-# Function to select top headlines
-def select_top_headlines(headlines):
-    headlines_text = "\n".join([f"{i+1}. {title}" for i, (title, _) in enumerate(headlines)])
-    prompt = f"""
-# CONTEXT #
-A business analyst and Gen AI consultant needs to select the top 5 headlines from a list that are most likely to attract views on LinkedIn.
-
-#########
-
-# OBJECTIVE #
-Select the top 5 headlines that are engaging, relevant, and likely to attract views and engagement on LinkedIn.
-
-#########
-
-# HEADLINES #
-{headlines_text}
-
-#########
-
-# RESPONSE #
-Print only the numbers of the selected headlines, separated by commas.
-"""
-    if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-        selected_indices = generate_gemini_comment(prompt)
-    elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-        selected_indices = generate_deepseek_comment(prompt)
-    elif model_type == 'Local':
-        response = ollama.chat(
-            model=ollama_model,
-            messages=[{'role': 'user', 'content': prompt}],
-            stream=True
-        )
-        selected_indices = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
-    else:
-        response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
-            messages=[{'role': 'user', 'content': prompt}],
-            temperature=model_temperature,
-            max_tokens=model_max_tokens
-        )
-        selected_indices = response.choices[0].message.content.strip()
-
-    selected_indices = [int(index.strip()) - 1 for index in selected_indices.split(',')]
-    return [headlines[i] for i in selected_indices]
-
 # Streamlit UI setup
 feed_type = st.selectbox('Select News Type', ['By Search Terms', 'Generate from URL', 'Manual Input', 'Top Headlines', 'By Topic', 'By Country'], index=0, key='feed_type')
 
@@ -278,11 +233,10 @@ if feed_type == 'Generate from URL':
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
-            prompt = f"{costar_prompt}\n{article_content}"
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                comment = generate_gemini_comment(prompt)
+                comment = generate_gemini_comment(article_content)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                comment = generate_deepseek_comment(prompt)
+                comment = generate_deepseek_comment(article_content)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
@@ -298,11 +252,10 @@ elif feed_type == 'Manual Input':
     article_url = st.text_input("Enter the Article URL (optional):", key='manual_article_url')
     if st.button('Generate Comment', key='manual_generate_button'):
         if article_content.strip():
-            prompt = f"{costar_prompt}\n{article_content}"
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                comment = generate_gemini_comment(prompt)
+                comment = generate_gemini_comment(article_content)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                comment = generate_deepseek_comment(prompt)
+                comment = generate_deepseek_comment(article_content)
             elif model_type == 'Local':
                 comment = generate_comment(article_content)
             else:
@@ -332,25 +285,21 @@ else:
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
-            selected_headlines = select_top_headlines(headlines)
-            for title, link in selected_headlines:
-                article_content = extract_article_content(link)
-                if article_content:
-                    prompt = f"{costar_prompt}\n{article_content}"
-                    if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                        comment = generate_gemini_comment(prompt)
-                    elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                        comment = generate_deepseek_comment(prompt)
-                    elif model_type == 'Local':
-                        comment = generate_comment(article_content)
-                    else:
-                        comment = generate_azure_comment(article_content)
-                    unique_id = str(uuid.uuid4())
-                    st.subheader(title)
-                    st.write(comment)
-                    st.write(f"\nRead more here:\n{link}")
-                    copy_button(comment, unique_id, link=link)
-                    st.write('---')
+            for title, link in headlines[:5]:
+                st.subheader(title)
+                if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
+                    comment = generate_gemini_comment(title)
+                elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
+                    comment = generate_deepseek_comment(title)
+                elif model_type == 'Local':
+                    comment = generate_comment(title)
+                else:
+                    comment = generate_azure_comment(title)
+                unique_id = str(uuid.uuid4())
+                st.write(comment)
+                st.write(f"\nRead more here:\n{link}")
+                copy_button(comment, unique_id, link=link)
+                st.write('---')
 
 # Streamlit UI setup for improving an existing comment
 st.header('Improve an Existing Comment')
@@ -361,7 +310,7 @@ if st.button('Improve Comment', key='improve_button'):
         url_match = re.search(r'(https?://\S+)', existing_comment)
         extracted_url = url_match.group(0) if url_match else None
 
-        prompt = f"""
+        improve_prompt = f"""
 # CONTEXT #
 A business analyst and Gen AI practitioner with a strong interest and knowledge in data science and AI needs to improve an existing LinkedIn comment based on the additional instructions provided. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic.
 
@@ -395,13 +344,13 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
 """
         try:
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                improved_comment = generate_gemini_comment(prompt)
+                improved_comment = generate_gemini_comment(improve_prompt)
             elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                improved_comment = generate_deepseek_comment(prompt)
+                improved_comment = generate_deepseek_comment(improve_prompt)
             elif model_type == 'Local':
                 response = ollama.chat(
                     model=ollama_model,
-                    messages=[{'role': 'user', 'content': prompt}],
+                    messages=[{'role': 'user', 'content': improve_prompt}],
                     stream=True
                 )
                 improved_comment = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
@@ -409,7 +358,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
             else:
                 response = client.chat.completions.create(
                     model="gpt-4-0125-preview",
-                    messages=[{'role': 'user', 'content': prompt}],
+                    messages=[{'role': 'user', 'content': improve_prompt}],
                     temperature=model_temperature,
                     max_tokens=model_max_tokens
                 )
