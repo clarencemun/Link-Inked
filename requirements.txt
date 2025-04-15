@@ -9,5 +9,5 @@ google-generativeai
 azure-ai-inference
 azure-core
 azure-identity
-newspaper
+newspaper4k
 googlenewsdecoder
