@@ -4,9 +4,9 @@ import uuid
 import urllib.parse
 import streamlit as st
 import feedparser
-import requests
+from newspaper import Article, Config
+from googlenewsdecoder import gnewsdecoder
 from PIL import Image
-from bs4 import BeautifulSoup
 import streamlit.components.v1 as components
 import google.generativeai as genai
 import ollama
@@ -171,6 +171,42 @@ def generate_azure_comment(article_content):
         st.error(f"An error occurred: {e}")
         return ""
 
+# Decode Google News URL
+def decode_google_news_url_wrapper(url):
+    try:
+        decoded_url_response = gnewsdecoder(url)
+        if decoded_url_response.get("status"):
+            return decoded_url_response["decoded_url"]
+        else:
+            st.error(f"Error decoding Google News URL: {decoded_url_response['message']}")
+            return url
+    except Exception as e:
+        st.error(f"Error decoding Google News URL: {e}")
+        return url
+
+# Extract article content using Newspaper with User-Agent
+def extract_article_content(url):
+    try:
+        user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
+        config = Config()
+        config.browser_user_agent = user_agent
+
+        actual_url = decode_google_news_url_wrapper(url)
+        if not actual_url:
+            return ""
+
+        article = Article(actual_url, config=config)
+        article.download()
+        article.parse()
+
+        title = article.title
+        article_content = article.text
+
+        return f"{title}. {article_content.strip()}".strip()
+    except Exception as e:
+        st.error(f"An error occurred while extracting the article: {e}")
+        return ""
+
 # Utility functions for RSS feeds and article extraction
 def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
@@ -207,29 +243,12 @@ def copy_button(comment, unique_id, link=None):
     """
     components.html(html_content, height=30)
 
-def extract_article_content(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            title = soup.find('h1')
-            title_text = title.get_text().strip() if title else ""
-            paragraphs = soup.find_all('p')
-            article_content = ' '.join([p.get_text() for p in paragraphs])
-            return f"{title_text}. {article_content.strip()}".strip()
-        else:
-            st.error(f"Failed to fetch the article. Status code: {response.status_code}")
-            return ""
-    except Exception as e:
-        st.error(f"An error occurred while extracting the article: {e}")
-        return ""
-
 # Streamlit UI setup
 feed_type = st.selectbox('Select News Type', ['By Search Terms', 'Generate from URL', 'Manual Input', 'Top Headlines', 'By Topic', 'By Country'], index=0, key='feed_type')
 
 # Conditional input fields based on feed type
 if feed_type == 'Generate from URL':
-    article_url = st.text_input("Enter the Article URL:", key='article_url_generate')
+    article_url = st.text_input("Enter the Google News URL:", key='article_url_generate')
     if st.button('Generate', key='generate_button'):
         article_content = extract_article_content(article_url) if article_url.strip() else ''
         if article_content:
@@ -286,20 +305,22 @@ else:
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
             for title, link in headlines[:5]:
-                st.subheader(title)
-                if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
-                    comment = generate_gemini_comment(title)
-                elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
-                    comment = generate_deepseek_comment(title)
-                elif model_type == 'Local':
-                    comment = generate_comment(title)
-                else:
-                    comment = generate_azure_comment(title)
-                unique_id = str(uuid.uuid4())
-                st.write(comment)
-                st.write(f"\nRead more here:\n{link}")
-                copy_button(comment, unique_id, link=link)
-                st.write('---')
+                article_content = extract_article_content(link)
+                if article_content:
+                    st.subheader(title)
+                    if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
+                        comment = generate_gemini_comment(article_content)
+                    elif model_type == 'Cloud' and cloud_model == 'DeepSeek-R1':
+                        comment = generate_deepseek_comment(article_content)
+                    elif model_type == 'Local':
+                        comment = generate_comment(article_content)
+                    else:
+                        comment = generate_azure_comment(article_content)
+                    unique_id = str(uuid.uuid4())
+                    st.write(comment)
+                    st.write(f"\nRead more here:\n{link}")
+                    copy_button(comment, unique_id, link=link)
+                    st.write('---')
 
 # Streamlit UI setup for improving an existing comment
 st.header('Improve an Existing Comment')
