@@ -11,4 +11,4 @@ azure-core
 azure-identity
 newspaper4k
 googlenewsdecoder
-lxml
+lxml.html.clean
