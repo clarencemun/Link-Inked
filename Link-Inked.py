@@ -190,9 +190,10 @@ def extract_article_content(url):
         config = Config()
         config.browser_user_agent = user_agent
 
+        # Decode the URL if it is a Google News URL
         actual_url = decode_google_news_url_wrapper(url)
         if not actual_url:
-            return ""
+            actual_url = url  # Use the original URL if decoding fails
 
         article = Article(actual_url, config=config)
         article.download()
@@ -201,10 +202,10 @@ def extract_article_content(url):
         title = article.title
         article_content = article.text
 
-        return f"{title}. {article_content.strip()}".strip()
+        return f"{title}. {article_content.strip()}".strip(), actual_url
     except Exception as e:
         st.error(f"An error occurred while extracting the article: {e}")
-        return ""
+        return "", url
 
 # Utility functions for RSS feeds and article extraction
 def fetch_news_from_rss(url):
@@ -247,9 +248,9 @@ feed_type = st.selectbox('Select News Type', ['By Search Terms', 'Generate from 
 
 # Conditional input fields based on feed type
 if feed_type == 'Generate from URL':
-    article_url = st.text_input("Enter the Google News URL:", key='article_url_generate')
+    article_url = st.text_input("Enter the URL:", key='article_url_generate')
     if st.button('Generate', key='generate_button'):
-        article_content = extract_article_content(article_url) if article_url.strip() else ''
+        article_content, actual_url = extract_article_content(article_url) if article_url.strip() else ('', article_url)
         if article_content:
             if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
                 comment = generate_gemini_comment(article_content)
@@ -262,8 +263,8 @@ if feed_type == 'Generate from URL':
             unique_id = str(uuid.uuid4())
             st.subheader("Generated Comment:")
             st.write(comment)
-            st.write(f"\nRead more here:\n{article_url}")
-            copy_button(comment, unique_id, link=article_url)
+            st.write(f"\nRead more here:\n{actual_url}")
+            copy_button(comment, unique_id, link=actual_url)
 elif feed_type == 'Manual Input':
     st.header('Generate LinkedIn Comment Manually')
     article_content = st.text_area("Paste the article content here:", key='manual_article_content')
@@ -297,14 +298,14 @@ else:
 
     topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0, key='topic') if feed_type == 'By Topic' else ''
     location = st.text_input('Enter Location', 'Singapore', key='location') if feed_type == 'By Country' else ''
-    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '7d', key='time_frame') if feed_type == 'By Search Terms' else ''
+    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d', key='time_frame') if feed_type == 'By Search Terms' else ''
 
     if st.button('Generate', key='generate_headlines_button'):
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
         headlines = fetch_news_from_rss(rss_url)
         if headlines:
-            for title, link in headlines[:5]:
-                article_content = extract_article_content(link)
+            for title, link in headlines[:7]:
+                article_content, actual_url = extract_article_content(link)
                 if article_content:
                     st.subheader(title)
                     if model_type == 'Cloud' and cloud_model == 'Gemini 1.5 Pro':
@@ -317,8 +318,8 @@ else:
                         comment = generate_azure_comment(article_content)
                     unique_id = str(uuid.uuid4())
                     st.write(comment)
-                    st.write(f"\nRead more here:\n{link}")
-                    copy_button(comment, unique_id, link=link)
+                    st.write(f"\nRead more here:\n{actual_url}")
+                    copy_button(comment, unique_id, link=actual_url)
                     st.write('---')
 
 # Streamlit UI setup for improving an existing comment
