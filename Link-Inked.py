@@ -103,12 +103,12 @@ if model_type == 'Cloud' and cloud_model == 'GPT-4o':
 # Prompt for generating LinkedIn comments
 costar_prompt = """
 # CONTEXT #
-A business analyst and Gen AI consultant with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic to provide a knowledgeable and insightful comment.
+A business analyst and Gen AI consultant with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic to provide a knowledgeable and insightful comment. The article content will be provided at the end of the prompt. As it is webscraped, it may contain HTML tags, ads, links to other articles and other formatting issues. do your best to focus on the content of the article and ignore the rest.
 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks or bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion. Keep the comment under 150 words and include a brief summary of the article, highlighting key points, and a sentence from the first person perspective that demonstrates the expert's domain knowledge.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks or bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion.
 
 #########
 
@@ -129,10 +129,12 @@ The intended audience is the LinkedIn network of the business analyst cum Gen AI
 
 # RESPONSE #
 Print only the LinkedIn comment and nothing but the LinkedIn comment in text format.
+The comment must not be more than 150 words. Include a brief summary of the article, highlighting key points. Include 1 sentence from the first person perspective that demonstrates the expert's domain knowledge.
 
 #############
 
 # START ANALYSIS #
+This is the end of the prompt, and the start of the article content
 """
 
 # Helper function to remove <think> tags
