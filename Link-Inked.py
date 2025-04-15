@@ -75,7 +75,7 @@ def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
 # Streamlit sidebar for model selection
 with st.sidebar:
     st.header("Settings")
-    model_type = st.radio("Select Model Type", ('Local', 'Cloud'), key='model_type')
+    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
 
     if model_type == 'Local':
         ollama_model = st.selectbox(
