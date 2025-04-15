@@ -75,7 +75,7 @@ def generate_deepseek_comment(user_prompt, model_name='DeepSeek-R1'):
 # Streamlit sidebar for model selection
 with st.sidebar:
     st.header("Settings")
-    model_type = st.radio("Select Model Type", ('Cloud', 'Local'), key='model_type')
+    model_type = st.radio("Select Model Type", ('Local', 'Cloud'), key='model_type')
 
     if model_type == 'Local':
         ollama_model = st.selectbox(
@@ -177,17 +177,16 @@ def decode_google_news_url_wrapper(url):
         decoded_url_response = gnewsdecoder(url)
         if decoded_url_response.get("status"):
             return decoded_url_response["decoded_url"]
-        else:
-            st.error(f"Error decoding Google News URL: {decoded_url_response['message']}")
-            return url
-    except Exception as e:
-        st.error(f"Error decoding Google News URL: {e}")
+    except Exception:
+        # Silently handle the error and return the original URL
         return url
 
 # Extract article content using Newspaper with User-Agent
 def extract_article_content(url):
     try:
-        user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
+        # Use a more recent and commonly used user-agent string
+        user_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
         config = Config()
         config.browser_user_agent = user_agent
 
