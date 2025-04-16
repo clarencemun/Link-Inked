@@ -215,7 +215,7 @@ def fetch_news_from_rss(url):
     feed = feedparser.parse(url)
     return [(entry.title, entry.link) for entry in feed.entries]
 
-def generate_rss_url(feed_type, search_terms='', topic='', location='', time_frame='1d', language='en-SG', country='SG'):
+def generate_rss_url(feed_type, search_terms='', topic='', location='', time_frame='12h', language='en-SG', country='SG'):
     base_url = "https://news.google.com/rss"
     if feed_type == 'Top Headlines':
         return f"{base_url}?hl={language}&gl={country}&ceid={country}:{language}"
@@ -301,7 +301,7 @@ else:
 
     topic = st.selectbox('Select Topic', ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH'], index=0, key='topic') if feed_type == 'By Topic' else ''
     location = st.text_input('Enter Location', 'Singapore', key='location') if feed_type == 'By Country' else ''
-    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '1d', key='time_frame') if feed_type == 'By Search Terms' else ''
+    time_frame = st.text_input('Enter Time Frame (e.g., 12h, 1d, 7d, 3m)', '12h', key='time_frame') if feed_type == 'By Search Terms' else ''
 
     if st.button('Generate', key='generate_headlines_button'):
         rss_url = generate_rss_url(feed_type, search_terms, topic, location, time_frame)
