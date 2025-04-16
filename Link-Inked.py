@@ -26,7 +26,7 @@ else:
     st.write("Banner image not found.")
 
 # Set model temperature
-model_temperature = 0.3
+model_temperature = 0.1
 
 # Set model max tokens
 model_max_tokens = 300
@@ -103,12 +103,12 @@ if model_type == 'Cloud' and cloud_model == 'GPT-4o':
 # Prompt for generating LinkedIn comments
 costar_prompt = """
 # CONTEXT #
-A business analyst and Gen AI consultant with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article. If the article is not related to technology, the business analyst should adopt the persona of an expert in that specific topic to provide a knowledgeable and insightful comment. The article content will be provided at the end of the prompt. As it is webscraped, it may contain HTML tags, ads, links to other articles and other formatting issues. do your best to focus on the content of the article and ignore the rest.
+A business analyst and Gen AI consultant with a strong interest and knowledge in data science and AI needs to generate a reserved, professional, and insightful comment for a LinkedIn article. If the article is not related to technology, provide a knowledgeable and insightful comment that demonstrates strong domain knowledge. The article content will be provided at the end of the prompt. As it is webscraped, it may contain HTML tags, ads, links to other articles and other formatting issues. do your best to focus on the content of the article and ignore the rest.
 
 #########
 
 # OBJECTIVE #
-Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks or bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, adopt the persona of an expert on that article's topic and provide contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion.
+Create a LinkedIn comment that is reserved, professional, insightful, and avoids the use of exclamation marks or bullet points. Be detailed but focused. Do not address the author directly, and cut unnecessary pleasantries. If the article is tech-related, talk about the underlying technologies and implications where applicable. If the article is not tech-related, provide a knowledgeable and insightful comment that provides contextually relevant insights. Subtly include philosophical, ethical, or societal perspectives that add value to the discussion.
 
 #########
 
@@ -150,6 +150,7 @@ def generate_comment(article_content):
         response = ollama.chat(
             model=ollama_model,
             messages=conversation_history,
+            options={'temperature': model_temperature, 'max_tokens': model_max_tokens},
             stream=True
         )
         response_text = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
@@ -374,6 +375,7 @@ Print only the improved LinkedIn comment and nothing but the improved LinkedIn c
                 response = ollama.chat(
                     model=ollama_model,
                     messages=[{'role': 'user', 'content': improve_prompt}],
+                    options={'temperature': model_temperature, 'max_tokens': model_max_tokens},
                     stream=True
                 )
                 improved_comment = "".join(chunk['message']['content'] for chunk in response if 'message' in chunk and 'content' in chunk['message'])
